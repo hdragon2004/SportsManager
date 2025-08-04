@@ -115,6 +115,13 @@ module.exports = {
       description: 'Moderator',
       createdAt: new Date(),
       updatedAt: new Date()
+    },
+    {
+      id: 4,
+      name: 'coach',
+      description: 'Huấn luyện viên',
+      createdAt: new Date(),
+      updatedAt: new Date()
     }
   ],
 
@@ -124,6 +131,9 @@ module.exports = {
       id: 1,
       User_ID: 1,
       Role_ID: 1,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'Admin role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -131,6 +141,9 @@ module.exports = {
       id: 2,
       User_ID: 2,
       Role_ID: 3,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'Moderator role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -138,6 +151,9 @@ module.exports = {
       id: 3,
       User_ID: 3,
       Role_ID: 2,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'User role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -145,6 +161,9 @@ module.exports = {
       id: 4,
       User_ID: 4,
       Role_ID: 2,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'User role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -152,6 +171,9 @@ module.exports = {
       id: 5,
       User_ID: 5,
       Role_ID: 2,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'User role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -159,6 +181,9 @@ module.exports = {
       id: 6,
       User_ID: 6,
       Role_ID: 2,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'User role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -166,6 +191,9 @@ module.exports = {
       id: 7,
       User_ID: 7,
       Role_ID: 2,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'User role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -173,6 +201,9 @@ module.exports = {
       id: 8,
       User_ID: 8,
       Role_ID: 2,
+      status: 'approved',
+      requestDate: new Date(),
+      reason: 'User role',
       createdAt: new Date(),
       updatedAt: new Date()
     }

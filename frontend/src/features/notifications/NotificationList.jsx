@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/Button';
+import Toast from '../../components/Toast';
+import { useAuth } from '../../contexts/AuthContext';
 import axiosClient from '../../services/axiosClient';
 
-const NotificationList = () => {
+const NotificationList = ({ onStatsUpdate }) => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all, unread, read, tournament, team, schedule, warning
+  const [filter, setFilter] = useState('all'); // all,emis unread, read, tournament, team, schedule, warning
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [toast, setToast] = useState(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -30,53 +34,43 @@ const NotificationList = () => {
           notificationsData = [
             {
               id: 1,
-              title: 'Giải đấu mới đã được tạo',
-              message: 'Giải đấu "Mùa giải 2024" đã được tạo thành công. Bạn có thể đăng ký tham gia ngay bây giờ.',
+              title: 'Đăng ký được chấp thuận',
+              message: 'Đội của bạn "heo" đã được chấp thuận tham gia giải đấu: Giải bóng đá sinh viên TP.HCM 2025',
               type: 'success',
-              category: 'tournament',
+              category: 'registration',
               read: false,
               timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 phút trước
-              priority: 'high'
+              priority: 'low'
             },
             {
               id: 2,
-              title: 'Lịch thi đấu đã được cập nhật',
-              message: 'Trận đấu giữa Team A vs Team B đã được lên lịch vào ngày mai lúc 14:00.',
-              type: 'info',
-              category: 'schedule',
+              title: 'Đăng ký bị từ chối',
+              message: 'Đội của bạn "Đội cầu lông HCMUT" đã bị từ chối tham gia giải đấu: Giải bóng đá sinh viên TP.HCM 2025',
+              type: 'error',
+              category: 'registration',
               read: false,
               timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 giờ trước
               priority: 'medium'
             },
             {
               id: 3,
-              title: 'Thành viên mới đã tham gia đội',
-              message: 'Nguyễn Văn A đã được thêm vào đội "Đội bóng số 1".',
-              type: 'success',
-              category: 'team',
+              title: 'Đăng ký bị từ chối',
+              message: 'Đội của bạn "heo" đã bị từ chối tham gia giải đấu: Giải bóng đá sinh viên TP.HCM 2025',
+              type: 'error',
+              category: 'registration',
               read: true,
               timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 ngày trước
               priority: 'low'
             },
             {
               id: 4,
-              title: 'Cảnh báo: Trận đấu sắp bắt đầu',
-              message: 'Trận đấu của bạn sẽ bắt đầu trong 30 phút. Vui lòng chuẩn bị sẵn sàng.',
-              type: 'warning',
-              category: 'schedule',
+              title: 'Đăng ký được chấp thuận',
+              message: 'Đội của bạn "Đội cầu lông HCMUT" đã được chấp thuận tham gia giải đấu: Giải bóng đá 7 người mùa hè 2025',
+              type: 'success',
+              category: 'registration',
               read: false,
               timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 phút trước
-              priority: 'high'
-            },
-            {
-              id: 5,
-              title: 'Kết quả trận đấu đã được cập nhật',
-              message: 'Team A đã thắng Team B với tỷ số 3-1 trong trận đấu vừa qua.',
-              type: 'info',
-              category: 'tournament',
-              read: true,
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 giờ trước
-              priority: 'medium'
+              priority: 'low'
             }
           ];
         }
@@ -132,6 +126,21 @@ const NotificationList = () => {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getTypeText = (type) => {
+    switch (type) {
+      case 'success':
+        return 'Thành công';
+      case 'warning':
+        return 'Cảnh báo';
+      case 'error':
+        return 'Lỗi';
+      case 'info':
+        return 'Thông tin';
+      default:
+        return 'Thông báo';
     }
   };
 
@@ -199,6 +208,23 @@ const NotificationList = () => {
     }
   };
 
+  const getCategoryText = (category) => {
+    switch (category) {
+      case 'tournament':
+        return 'Giải đấu';
+      case 'team':
+        return 'Đội thi đấu';
+      case 'schedule':
+        return 'Lịch thi đấu';
+      case 'registration':
+        return 'Đăng ký';
+      case 'permission':
+        return 'Phân quyền';
+      default:
+        return 'Thông báo';
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high':
@@ -209,6 +235,19 @@ const NotificationList = () => {
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityText = (priority) => {
+    switch (priority) {
+      case 'high':
+        return 'Cao';
+      case 'medium':
+        return 'Trung bình';
+      case 'low':
+        return 'Thấp';
+      default:
+        return 'Thấp';
     }
   };
 
@@ -227,41 +266,155 @@ const NotificationList = () => {
 
   const markAsRead = async (notificationId) => {
     try {
-      await axiosClient.post(`/notifications/${notificationId}/read`);
-      console.log('Notification marked as read:', notificationId);
+      // Hiển thị loading state
       setNotifications(prev =>
         prev.map(notification =>
           notification.id === notificationId
-            ? { ...notification, read: true }
+            ? { ...notification, isUpdating: true }
             : notification
         )
       );
+
+      // Gọi API để đánh dấu đã đọc
+      const response = await axiosClient.put(`/notifications/${notificationId}/read`);
+      
+      if (response.data.success) {
+        // Cập nhật state local
+        setNotifications(prev =>
+          prev.map(notification =>
+            notification.id === notificationId
+              ? { ...notification, read: true, isUpdating: false }
+              : notification
+          )
+        );
+        
+        // Hiển thị thông báo thành công
+        setToast({ message: 'Đã đánh dấu thông báo là đã đọc!', type: 'success' });
+        
+        // Cập nhật thống kê nếu có callback
+        if (onStatsUpdate) {
+          onStatsUpdate();
+        }
+      } else {
+        throw new Error(response.data.message || 'Có lỗi xảy ra');
+      }
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      
+      // Khôi phục trạng thái nếu có lỗi
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, isUpdating: false }
+            : notification
+        )
+      );
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      const errorMessage = error.response?.data?.message || error.message;
+      setToast({ 
+        message: 'Có lỗi xảy ra khi đánh dấu đã đọc: ' + errorMessage, 
+        type: 'error' 
+      });
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      await axiosClient.post('/notifications/mark-all-read');
-      console.log('All notifications marked as read');
+      // Hiển thị loading state cho tất cả notifications
       setNotifications(prev =>
-        prev.map(notification => ({ ...notification, read: true }))
+        prev.map(notification => ({ ...notification, isUpdating: true }))
       );
+
+      // Gọi API để đánh dấu tất cả đã đọc
+      const response = await axiosClient.put('/notifications/read-all');
+      
+      if (response.data.success) {
+        // Cập nhật state local
+        setNotifications(prev =>
+          prev.map(notification => ({ ...notification, read: true, isUpdating: false }))
+        );
+        
+        // Hiển thị thông báo thành công
+        setToast({ message: 'Đã đánh dấu tất cả thông báo là đã đọc!', type: 'success' });
+        
+        // Cập nhật thống kê nếu có callback
+        if (onStatsUpdate) {
+          onStatsUpdate();
+        }
+      } else {
+        throw new Error(response.data.message || 'Có lỗi xảy ra');
+      }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      
+      // Khôi phục trạng thái nếu có lỗi
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, isUpdating: false }))
+      );
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      const errorMessage = error.response?.data?.message || error.message;
+      setToast({ 
+        message: 'Có lỗi xảy ra khi đánh dấu tất cả đã đọc: ' + errorMessage, 
+        type: 'error' 
+      });
     }
   };
 
   const deleteNotification = async (notificationId) => {
     try {
-      await axiosClient.delete(`/notifications/${notificationId}`);
-      console.log('Notification deleted:', notificationId);
+      // Xác nhận trước khi xóa
+      if (!window.confirm('Bạn có chắc muốn xóa thông báo này?')) {
+        return;
+      }
+
+      // Hiển thị loading state
       setNotifications(prev =>
-        prev.filter(notification => notification.id !== notificationId)
+        prev.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, isDeleting: true }
+            : notification
+        )
       );
+
+      // Gọi API để xóa notification
+      const response = await axiosClient.delete(`/notifications/${notificationId}`);
+      
+      if (response.data.success) {
+        // Xóa khỏi state local
+        setNotifications(prev =>
+          prev.filter(notification => notification.id !== notificationId)
+        );
+        
+        // Hiển thị thông báo thành công
+        setToast({ message: 'Đã xóa thông báo thành công!', type: 'success' });
+        
+        // Cập nhật thống kê nếu có callback
+        if (onStatsUpdate) {
+          onStatsUpdate();
+        }
+      } else {
+        throw new Error(response.data.message || 'Có lỗi xảy ra');
+      }
     } catch (error) {
       console.error('Error deleting notification:', error);
+      
+      // Khôi phục trạng thái nếu có lỗi
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, isDeleting: false }
+            : notification
+        )
+      );
+      
+      // Hiển thị thông báo lỗi chi tiết hơn
+      const errorMessage = error.response?.data?.message || error.message;
+      setToast({ 
+        message: 'Có lỗi xảy ra khi xóa thông báo: ' + errorMessage, 
+        type: 'error' 
+      });
     }
   };
 
@@ -279,6 +432,7 @@ const NotificationList = () => {
   });
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const isUpdatingAll = notifications.some(n => n.isUpdating);
 
   if (loading) {
     return (
@@ -317,7 +471,8 @@ const NotificationList = () => {
             <option value="tournament">Giải đấu</option>
             <option value="team">Đội thi đấu</option>
             <option value="schedule">Lịch thi đấu</option>
-            <option value="warning">Cảnh báo</option>
+            <option value="registration">Đăng ký</option>
+            <option value="permission">Phân quyền</option>
           </select>
         </div>
 
@@ -326,9 +481,17 @@ const NotificationList = () => {
             variant="outline"
             size="sm"
             onClick={markAllAsRead}
-            className="ml-auto"
+            disabled={isUpdatingAll}
+            className="ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Đánh dấu tất cả đã đọc
+            {isUpdatingAll ? (
+              <span className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b border-blue-600 mr-2"></div>
+                Đang xử lý...
+              </span>
+            ) : (
+              'Đánh dấu tất cả đã đọc'
+            )}
           </Button>
         )}
       </div>
@@ -359,6 +522,11 @@ const NotificationList = () => {
                 <div className={`flex-shrink-0 p-2 rounded-full ${getTypeColor(notification.type)}`}>
                   {getTypeIcon(notification.type)}
                 </div>
+                <div className="flex-shrink-0">
+                  <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(notification.type)}`}>
+                    {getTypeText(notification.type)}
+                  </span>
+                </div>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
@@ -371,14 +539,13 @@ const NotificationList = () => {
                         </p>
                         {notification.priority && (
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(notification.priority)}`}>
-                            {notification.priority === 'high' ? 'Cao' : 
-                             notification.priority === 'medium' ? 'Trung bình' : 'Thấp'}
+                            {getPriorityText(notification.priority)}
                           </span>
                         )}
                         {notification.category && (
                           <div className="flex items-center space-x-1 text-gray-500">
                             {getCategoryIcon(notification.category)}
-                            <span className="text-xs capitalize">{notification.category}</span>
+                            <span className="text-xs">{getCategoryText(notification.category)}</span>
                           </div>
                         )}
                       </div>
@@ -399,19 +566,34 @@ const NotificationList = () => {
                   </div>
                   
                   <div className="flex items-center space-x-3 mt-3 pt-2 border-t border-gray-100">
-                    {!notification.read && (
+                    {!notification.read && !notification.isUpdating && (
                       <button
                         onClick={() => markAsRead(notification.id)}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        disabled={notification.isDeleting}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Đánh dấu đã đọc
                       </button>
                     )}
+                    {notification.isUpdating && (
+                      <span className="text-xs text-blue-600 font-medium flex items-center">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-1"></div>
+                        Đang xử lý...
+                      </span>
+                    )}
                     <button
                       onClick={() => deleteNotification(notification.id)}
-                      className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      disabled={notification.isUpdating || notification.isDeleting}
+                      className="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Xóa
+                      {notification.isDeleting ? (
+                        <span className="flex items-center">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-red-600 mr-1"></div>
+                          Đang xóa...
+                        </span>
+                      ) : (
+                        'Xóa'
+                      )}
                     </button>
                   </div>
                 </div>
@@ -420,6 +602,15 @@ const NotificationList = () => {
           ))
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 };

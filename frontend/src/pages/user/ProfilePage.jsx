@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import axiosClient from '../../services/axiosClient';
+import RequestPermissionForm from '../../components/RequestPermissionForm';
+import PermissionStatus from '../../components/PermissionStatus';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
+  const { user, isCoach, isAdmin, isModerator } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -47,6 +50,8 @@ const ProfilePage = () => {
     setIsEditing(false);
   };
 
+
+
   return (
     <div className="space-y-6">
         {/* Header */}
@@ -70,29 +75,44 @@ const ProfilePage = () => {
           <div className="p-8">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-semibold text-white">Thông tin cá nhân</h2>
-              {!isEditing ? (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="bg-gradient-to-r from-[#30ddff] to-[#00b8d4] text-white px-6 py-3 rounded-xl hover:from-[#00b8d4] hover:to-[#30ddff] transition-all duration-300 shadow-lg"
-                >
-                  Chỉnh sửa
-                </button>
-              ) : (
-                <div className="space-x-3">
+              <div className="flex items-center space-x-3">
+                {/* Button xin quyền huấn luyện viên - chỉ hiển thị cho user có role "user" */}
+                {!isCoach && !isAdmin && !isModerator && (
                   <button
-                    onClick={handleSave}
-                    className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg"
+                    onClick={() => setShowRequestModal(true)}
+                    className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg flex items-center space-x-2"
                   >
-                    Lưu
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Xin quyền HLV</span>
                   </button>
+                )}
+                
+                {!isEditing ? (
                   <button
-                    onClick={handleCancel}
-                    className="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-all duration-300"
+                    onClick={() => setIsEditing(true)}
+                    className="bg-gradient-to-r from-[#30ddff] to-[#00b8d4] text-white px-6 py-3 rounded-xl hover:from-[#00b8d4] hover:to-[#30ddff] transition-all duration-300 shadow-lg"
                   >
-                    Hủy
+                    Chỉnh sửa
                   </button>
-                </div>
-              )}
+                ) : (
+                  <div className="space-x-3">
+                    <button
+                      onClick={handleSave}
+                      className="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg"
+                    >
+                      Lưu
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      className="bg-gray-600 text-white px-6 py-3 rounded-xl hover:bg-gray-700 transition-all duration-300"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -180,6 +200,7 @@ const ProfilePage = () => {
             {/* Thống kê */}
             <div className="mt-12">
               <h3 className="text-xl font-semibold text-white mb-6">Thống kê hoạt động</h3>
+              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 hover:border-[#30ddff]/30 transition-all duration-300">
                   <div className="flex items-center">
@@ -226,6 +247,29 @@ const ProfilePage = () => {
             </div>
           </div>
         </div>
+
+        {/* Trạng thái yêu cầu quyền */}
+        <PermissionStatus userId={user?.id} />
+
+        {/* Modal xin quyền huấn luyện viên */}
+        {showRequestModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800/90 backdrop-blur-xl border border-gray-700 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-semibold text-white">Xin quyền huấn luyện viên</h3>
+                <button
+                  onClick={() => setShowRequestModal(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <RequestPermissionForm />
+            </div>
+          </div>
+        )}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import { StatusCodes } from 'http-status-codes';
+import models from '../models';
 import {
   getAllRoleUsers as getAllRoleUsersService,
   getRoleUserById,
@@ -141,6 +142,61 @@ export async function deleteRoleUser(req, res) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
       success: false, 
       message: 'Error deleting role user',
+      error: error.message
+    });
+  }
+}
+
+// Function để user xin quyền huấn luyện viên
+export async function requestCoachRole(req, res) {
+  try {
+    const userId = req.user.id;
+    
+    // Kiểm tra xem user đã có role coach chưa
+    const isAlreadyCoach = req.userRoles?.some(role => role.name === 'coach' || role.name === 'huấn luyện viên');
+    if (isAlreadyCoach) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Bạn đã có quyền huấn luyện viên'
+      });
+    }
+
+    // Kiểm tra xem đã có request pending chưa
+    const existingRequest = await models.Role_User.findOne({
+      where: {
+        User_ID: userId,
+        Role_ID: 4, // Coach role
+        status: 'pending'
+      }
+    });
+    if (existingRequest) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Bạn đã có yêu cầu xin quyền huấn luyện viên đang chờ xử lý'
+      });
+    }
+
+    // Tạo request xin quyền coach (status: pending)
+    const roleUserData = {
+      User_ID: userId,
+      Role_ID: 4, // RoleId 4 là coach role
+      status: 'pending',
+      requestDate: new Date(),
+      reason: req.body.reason || 'Xin quyền huấn luyện viên'
+    };
+
+    const roleUser = await createRoleUserService(roleUserData);
+    
+    res.status(StatusCodes.CREATED).json({ 
+      success: true, 
+      message: 'Yêu cầu xin quyền huấn luyện viên đã được gửi thành công',
+      data: roleUser 
+    });
+  } catch (error) {
+    console.error('Error requesting coach role:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Có lỗi xảy ra khi gửi yêu cầu',
       error: error.message
     });
   }

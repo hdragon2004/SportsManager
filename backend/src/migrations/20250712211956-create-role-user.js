@@ -32,6 +32,20 @@ module.exports = {
       note: {
         type: Sequelize.STRING
       },
+      status: {
+        type: Sequelize.ENUM('pending', 'approved', 'rejected'),
+        defaultValue: 'pending',
+        allowNull: false
+      },
+      requestDate: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.NOW,
+        allowNull: true
+      },
+      reason: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

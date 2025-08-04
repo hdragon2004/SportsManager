@@ -27,6 +27,7 @@ import TeamsPage from '../pages/admin/TeamsPage';
 import EventsPage from '../pages/admin/EventsPage';
 import RegistrationAdmin from '../pages/admin/RegistrationAdmin';
 import SettingsPage from '../pages/SettingsPage';
+import PermissionPage from '../pages/admin/PermissionPage';
 import AdminLayout from '../layouts/AdminLayout';
 import UserLayout from '../layouts/UserLayout';
 import MainLayout from '../layouts/MainLayout';
@@ -296,7 +297,7 @@ const AppRoutes = () => {
         path="/admin/permissions"
         element={
           <AdminRoute>
-            <SettingsPage />
+            <PermissionPage />
           </AdminRoute>
         }
       />

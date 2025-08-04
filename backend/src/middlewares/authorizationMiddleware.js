@@ -24,16 +24,15 @@ export const checkDataAccess = (resourceType) => {
         return next(new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy người dùng'));
       }
 
-      // Kiểm tra nếu user có role admin thì cho phép truy cập tất cả
-      const isAdmin = userWithRoles.Roles?.some(role => role.name === 'admin');
-      if (isAdmin) {
-        req.userRoles = userWithRoles.Roles;
-        return next();
-      }
-
       // Lưu thông tin user và roles vào request
       req.userRoles = userWithRoles.Roles;
       req.userData = userWithRoles;
+
+      // Kiểm tra nếu user có role admin thì cho phép truy cập tất cả
+      const isAdmin = userWithRoles.Roles?.some(role => role.name === 'admin');
+      if (isAdmin) {
+        return next();
+      }
 
       // Kiểm tra quyền truy cập theo loại resource
       switch (resourceType) {

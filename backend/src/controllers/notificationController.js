@@ -205,14 +205,26 @@ export async function updateNotification(req, res) {
 
 export async function deleteNotification(req, res) {
   try {
-    const deleted = await deleteNotificationService(req.params.id);
+    // Kiểm tra quyền truy cập - middleware đã kiểm tra nhưng đảm bảo thêm một lần nữa
+    const notification = await getNotificationById(req.params.id);
     
-    if (!deleted) {
+    if (!notification) {
       return res.status(StatusCodes.NOT_FOUND).json({ 
         success: false, 
         message: 'Notification not found' 
       });
     }
+
+    // Kiểm tra nếu user có role admin thì cho phép
+    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
+    if (!isAdmin && notification.User_ID !== req.user.userId) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Bạn không có quyền xóa thông báo này'
+      });
+    }
+    
+    const deleted = await deleteNotificationService(req.params.id);
     
     res.status(StatusCodes.OK).json({ 
       success: true, 
@@ -230,7 +242,8 @@ export async function deleteNotification(req, res) {
 
 export async function markNotificationAsRead(req, res) {
   try {
-    const notification = await markAsRead(req.params.id);
+    // Kiểm tra quyền truy cập - middleware đã kiểm tra nhưng đảm bảo thêm một lần nữa
+    const notification = await getNotificationById(req.params.id);
     
     if (!notification) {
       return res.status(StatusCodes.NOT_FOUND).json({ 
@@ -238,8 +251,19 @@ export async function markNotificationAsRead(req, res) {
         message: 'Notification not found' 
       });
     }
+
+    // Kiểm tra nếu user có role admin thì cho phép
+    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
+    if (!isAdmin && notification.User_ID !== req.user.userId) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Bạn không có quyền truy cập thông báo này'
+      });
+    }
     
-    res.status(StatusCodes.OK).json({ success: true, data: notification });
+    const updatedNotification = await markAsRead(req.params.id);
+    
+    res.status(StatusCodes.OK).json({ success: true, data: updatedNotification });
   } catch (error) {
     console.error('Error marking notification as read:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
@@ -252,7 +276,19 @@ export async function markNotificationAsRead(req, res) {
 
 export async function markAllNotificationsAsRead(req, res) {
   try {
-    await markAllAsRead(req.params.userId);
+    // Nếu có userId trong params thì sử dụng, không thì sử dụng user hiện tại
+    const userId = req.params.userId || req.user.userId;
+    
+    // Kiểm tra nếu user có role admin thì cho phép
+    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
+    if (!isAdmin && parseInt(userId) !== req.user.userId) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        message: 'Bạn không có quyền đánh dấu thông báo của người khác'
+      });
+    }
+    
+    await markAllAsRead(userId);
     res.status(StatusCodes.OK).json({ 
       success: true, 
       message: 'All notifications marked as read' 

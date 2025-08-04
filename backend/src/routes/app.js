@@ -53,6 +53,9 @@ export function AppRoutes(app) {
     router.post('/role-users', authMiddleware, checkDataAccess('user'), roleUserController.createRoleUser);
     router.put('/role-users/:id', authMiddleware, checkDataAccess('user'), roleUserController.updateRoleUser);
     router.delete('/role-users/:id', authMiddleware, checkDataAccess('user'), roleUserController.deleteRoleUser);
+    
+    // Route để user xin quyền huấn luyện viên
+    router.post('/request-coach-role', authMiddleware, roleUserController.requestCoachRole);
 
 
 
@@ -109,12 +112,13 @@ export function AppRoutes(app) {
     // Notification routes
     router.get('/notifications', authMiddleware, filterDataByUser('notification'), notificationController.getAllNotifications);
     router.get('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.getNotification);
-    router.post('/notifications', notificationController.createNotification);
+    router.post('/notifications', authMiddleware, notificationController.createNotification);
     router.put('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.updateNotification);
     router.delete('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.deleteNotification);
     router.get('/users/:userId/notifications', authMiddleware, checkDataAccess('notification'), notificationController.getUserNotifications);
-    router.get('/users/:userId/notifications/unread-count', authMiddleware, notificationController.getUnreadCount);
+    router.get('/users/:userId/notifications/unread-count', authMiddleware, checkDataAccess('notification'), notificationController.getUnreadCount);
     router.put('/notifications/:id/read', authMiddleware, checkDataAccess('notification'), notificationController.markNotificationAsRead);
+    router.put('/notifications/read-all', authMiddleware, filterDataByUser('notification'), notificationController.markAllNotificationsAsRead);
     router.put('/users/:userId/notifications/read-all', authMiddleware, checkDataAccess('notification'), notificationController.markAllNotificationsAsRead);
 
     // Sử dụng router chính với tiền tố /api

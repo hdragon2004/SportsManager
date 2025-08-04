@@ -19,4 +19,7 @@ export const deleteUser = (id) => axiosInstance.delete(`/users/${id}`);
 export const updateUserStatus = (id, status) => axiosInstance.patch(`/users/${id}/status`, { status });
 
 // Cập nhật role của user
-export const updateUserRole = (id, role) => axiosInstance.patch(`/users/${id}/role`, { role }); 
+export const updateUserRole = (id, role) => axiosInstance.patch(`/users/${id}/role`, { role });
+
+// Xin quyền huấn luyện viên
+export const requestCoachRole = (reason) => axiosInstance.post('/request-coach-role', { reason }); 

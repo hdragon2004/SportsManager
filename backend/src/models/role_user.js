@@ -28,6 +28,7 @@ module.exports = (sequelize, DataTypes) => {
   Role_User.init({
     Role_ID: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
         model: 'Roles',
         key: 'id'
@@ -35,10 +36,25 @@ module.exports = (sequelize, DataTypes) => {
     },
     User_ID: {
       type: DataTypes.INTEGER,
+      allowNull: false,
       references: {
         model: 'Users',
         key: 'id'
       }
+    },
+    status: {
+      type: DataTypes.ENUM('pending', 'approved', 'rejected'),
+      defaultValue: 'pending',
+      allowNull: false
+    },
+    requestDate: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+      allowNull: true
+    },
+    reason: {
+      type: DataTypes.TEXT,
+      allowNull: true
     },
     note: DataTypes.STRING
   }, {
