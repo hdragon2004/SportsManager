@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Socket.io Test</title>
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const socket = io('http://localhost:3000');
+      
+      // Kết nối
+      socket.on('connect', () => {
+        console.log('Connected to server');
+        document.getElementById('status').textContent = 'Connected';
+        document.getElementById('status').style.color = 'green';
+      });
+      
+      // Ngắt kết nối
+      socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+        document.getElementById('status').textContent = 'Disconnected';
+        document.getElementById('status').style.color = 'red';
+      });
+      
+      // Xác thực
+      document.getElementById('authenticate').addEventListener('click', () => {
+        const userId = document.getElementById('userId').value;
+        socket.emit('authenticate', parseInt(userId));
+        console.log('Sent authenticate event with userId:', userId);
+      });
+      
+      // Tham gia phòng
+      document.getElementById('joinTournament').addEventListener('click', () => {
+        const tournamentId = document.getElementById('tournamentId').value;
+        socket.emit('joinTournament', parseInt(tournamentId));
+        console.log('Sent joinTournament event with tournamentId:', tournamentId);
+      });
+      
+      // Lắng nghe sự kiện newSchedule
+      socket.on('newSchedule', (data) => {
+        console.log('Received newSchedule event:', data);
+        addMessage('newSchedule', JSON.stringify(data));
+      });
+      
+      // Lắng nghe sự kiện matchResultUpdated
+      socket.on('matchResultUpdated', (data) => {
+        console.log('Received matchResultUpdated event:', data);
+        addMessage('matchResultUpdated', JSON.stringify(data));
+      });
+      
+      // Lắng nghe sự kiện registrationStatus
+      socket.on('registrationStatus', (data) => {
+        console.log('Received registrationStatus event:', data);
+        addMessage('registrationStatus', JSON.stringify(data));
+      });
+    });
+    
+    function addMessage(event, data) {
+      const messagesDiv = document.getElementById('messages');
+      const messageDiv = document.createElement('div');
+      messageDiv.innerHTML = `<strong>${event}:</strong> ${data}`;
+      messagesDiv.appendChild(messageDiv);
+    }
+  </script>
+</head>
+<body>
+  <h1>Socket.io Test Client</h1>
+  <p>Status: <span id="status">Disconnected</span></p>
+  
+  <div>
+    <h3>Authenticate</h3>
+    <input type="number" id="userId" value="1" placeholder="User ID">
+    <button id="authenticate">Authenticate</button>
+  </div>
+  
+  <div>
+    <h3>Join Tournament</h3>
+    <input type="number" id="tournamentId" value="1" placeholder="Tournament ID">
+    <button id="joinTournament">Join Tournament</button>
+  </div>
+  
+  <div>
+    <h3>Messages Received:</h3>
+    <div id="messages"></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,482 @@
+/* HeroBanner Component Styles - Professional Sports Management */
+
+.hero-banner {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+.hero-banner__top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #30ddff, #00b8d4, #0099b3);
+  z-index: 20;
+}
+
+.hero-banner__container {
+  position: relative;
+  height: 100%;
+  display: flex;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.hero-banner__left-section {
+  width: 60%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 0;
+  z-index: 10;
+}
+
+.hero-banner__right-section {
+  width: 40%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main Content */
+.hero-banner__main-content {
+  max-width: 32rem;
+}
+
+.hero-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(48, 221, 255, 0.1);
+  border: 1px solid rgba(48, 221, 255, 0.2);
+  border-radius: 2rem;
+  padding: 0.5rem 1rem;
+  margin-bottom: 2rem;
+}
+
+.hero-banner__badge-text {
+  font-size: 0.875rem;
+  color: #30ddff;
+  font-weight: 600;
+}
+
+.hero-banner__headline {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.025em;
+}
+
+.hero-banner__headline-highlight {
+  background: linear-gradient(135deg, #30ddff, #00b8d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-banner__subtitle {
+  font-size: 1.125rem;
+  color: #cbd5e1;
+  line-height: 1.6;
+  margin-bottom: 2.5rem;
+  max-width: 28rem;
+}
+
+/* Action Buttons */
+.hero-banner__action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 3rem;
+}
+
+.hero-banner__action-button {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.hero-banner__action-button--primary {
+  background: linear-gradient(135deg, #30ddff, #00b8d4);
+  color: white;
+  box-shadow: 0 4px 20px rgba(48, 221, 255, 0.3);
+}
+
+.hero-banner__action-button--primary:hover {
+  background: linear-gradient(135deg, #00b8d4, #0099b3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(48, 221, 255, 0.4);
+}
+
+.hero-banner__action-button--secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.hero-banner__action-button--secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Features Grid */
+.hero-banner__features {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.hero-banner__feature {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.hero-banner__feature-icon {
+  width: 2rem;
+  height: 2rem;
+  background: rgba(48, 221, 255, 0.1);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #30ddff;
+}
+
+/* Social Icons */
+.hero-banner__social-icons {
+  position: absolute;
+  bottom: 2rem;
+  left: 0;
+  display: flex;
+  gap: 1rem;
+}
+
+.hero-banner__social-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.hero-banner__social-button:hover {
+  background: rgba(48, 221, 255, 0.2);
+  border-color: #30ddff;
+  transform: translateY(-2px);
+}
+
+/* Right Section */
+.hero-banner__background-pattern {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(48, 221, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+  z-index: 1;
+}
+
+.hero-banner__sports-icons {
+  position: absolute;
+  top: 20%;
+  right: 10%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 5;
+}
+
+.hero-banner__sport-icon {
+  width: 3rem;
+  height: 3rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: float 3s ease-in-out infinite;
+}
+
+.hero-banner__sport-icon--football {
+  animation-delay: 0s;
+}
+
+.hero-banner__sport-icon--basketball {
+  animation-delay: 1s;
+}
+
+.hero-banner__sport-icon--tennis {
+  animation-delay: 2s;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Floating Cards */
+.hero-banner__floating-cards {
+  position: absolute;
+  bottom: 20%;
+  left: 10%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  z-index: 5;
+}
+
+.hero-banner__floating-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 200px;
+  animation: slideIn 0.6s ease-out;
+}
+
+.hero-banner__floating-card--tournament {
+  animation-delay: 0.2s;
+}
+
+.hero-banner__floating-card--teams {
+  animation-delay: 0.4s;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.hero-banner__card-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: linear-gradient(135deg, #30ddff, #00b8d4);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.hero-banner__card-content h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+}
+
+.hero-banner__card-content p {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Statistics Section */
+.hero-banner__stats {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.95), transparent);
+}
+
+.hero-banner__stat-box {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 180px;
+  transition: all 0.3s ease;
+}
+
+.hero-banner__stat-box:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.hero-banner__stat-icon {
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(135deg, #30ddff, #00b8d4);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.hero-banner__stat-content {
+  flex: 1;
+}
+
+.hero-banner__stat-number {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.hero-banner__stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .hero-banner__container {
+    padding: 0 1rem;
+  }
+  
+  .hero-banner__headline {
+    font-size: 3rem;
+  }
+  
+  .hero-banner__features {
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-banner__container {
+    flex-direction: column;
+    padding: 0 1rem;
+  }
+  
+  .hero-banner__left-section,
+  .hero-banner__right-section {
+    width: 100%;
+  }
+  
+  .hero-banner__left-section {
+    height: 60%;
+    padding: 1rem 0;
+  }
+  
+  .hero-banner__right-section {
+    height: 40%;
+  }
+  
+  .hero-banner__headline {
+    font-size: 2.5rem;
+  }
+  
+  .hero-banner__action-buttons {
+    flex-direction: column;
+  }
+  
+  .hero-banner__features {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .hero-banner__stats {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .hero-banner__stat-box {
+    flex: 1 1 calc(50% - 0.5rem);
+    min-width: 150px;
+  }
+  
+  .hero-banner__floating-cards {
+    position: relative;
+    bottom: auto;
+    left: auto;
+    margin-top: 1rem;
+  }
+  
+  .hero-banner__sports-icons {
+    position: relative;
+    top: auto;
+    right: auto;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-banner__logo {
+    top: 1rem;
+  }
+  
+  .hero-banner__logo-title {
+    font-size: 1.5rem;
+  }
+  
+  .hero-banner__headline {
+    font-size: 2rem;
+  }
+  
+  .hero-banner__subtitle {
+    font-size: 1rem;
+  }
+  
+  .hero-banner__main-content {
+    padding: 0 0.5rem;
+  }
+  
+  .hero-banner__stats {
+    padding: 1rem;
+  }
+  
+  .hero-banner__stat-box {
+    padding: 1rem;
+  }
+  
+  .hero-banner__stat-number {
+    font-size: 1.25rem;
+  }
+} 
