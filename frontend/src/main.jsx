@@ -4,13 +4,16 @@ import { BrowserRouter } from 'react-router-dom'; // <--- IMPORT BrowserRouter
 import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { SocketProvider } from './contexts/SocketContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     {/* Đặt BrowserRouter bao bọc tất cả */}
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        <SocketProvider>
+          <App />
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>,

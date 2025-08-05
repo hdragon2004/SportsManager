@@ -26,8 +26,11 @@ import DashboardPage from '../pages/admin/DashboardPage';
 import TeamsPage from '../pages/admin/TeamsPage';
 import EventsPage from '../pages/admin/EventsPage';
 import RegistrationAdmin from '../pages/admin/RegistrationAdmin';
+import NotificationAdmin from '../pages/admin/NotificationAdmin';
 import SettingsPage from '../pages/SettingsPage';
 import PermissionPage from '../pages/admin/PermissionPage';
+import CoachPermissionPage from '../pages/CoachPermissionPage';
+import CoachPermissionAdmin from '../pages/admin/CoachPermissionAdmin';
 import AdminLayout from '../layouts/AdminLayout';
 import UserLayout from '../layouts/UserLayout';
 import MainLayout from '../layouts/MainLayout';
@@ -252,6 +255,18 @@ const AppRoutes = () => {
         }
       />
 
+      {/* Coach Permission Route */}
+      <Route
+        path="/coach-permission"
+        element={
+          <PrivateRoute>
+            <MainLayoutRoute>
+              <CoachPermissionPage />
+            </MainLayoutRoute>
+          </PrivateRoute>
+        }
+      />
+
       {/* Admin Routes */}
       <Route
         path="/admin/dashboard"
@@ -289,7 +304,7 @@ const AppRoutes = () => {
         path="/admin/notifications"
         element={
           <AdminRoute>
-            <NotificationsPage />
+            <NotificationAdmin />
           </AdminRoute>
         }
       />
@@ -297,7 +312,7 @@ const AppRoutes = () => {
         path="/admin/permissions"
         element={
           <AdminRoute>
-            <PermissionPage />
+            <CoachPermissionAdmin />
           </AdminRoute>
         }
       />
@@ -314,6 +329,14 @@ const AppRoutes = () => {
         element={
           <AdminRoute>
             <StatisticsPage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/coach-permissions"
+        element={
+          <AdminRoute>
+            <CoachPermissionAdmin />
           </AdminRoute>
         }
       />

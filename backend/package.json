@@ -25,7 +25,7 @@
     "winston": "^3.11.0"
   },
   "scripts": {
-    "start": "node ./src/server.js",
+    "start": "babel-node ./src/server.js",
     "dev": "nodemon --exec babel-node ./src/server.js",
     "migrate": "sequelize-cli db:migrate",
     "seed": "node ./src/seeders/seed-database.js"

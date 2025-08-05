@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../components/Button';
 import Toast from '../../components/Toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
 import axiosClient from '../../services/axiosClient';
 
 const NotificationList = ({ onStatsUpdate }) => {
   const { user } = useAuth();
+  const { notifications: socketNotifications, unreadCount, markAsRead, markAllAsRead, isConnected, setUnreadCount } = useSocket();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all'); // all,emis unread, read, tournament, team, schedule, warning
+  const [filter, setFilter] = useState('all'); // all, unread, read, tournament, team, schedule, warning
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [toast, setToast] = useState(null);
+  const [processingNotifications, setProcessingNotifications] = useState(new Set());
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -30,89 +33,60 @@ const NotificationList = ({ onStatsUpdate }) => {
           notificationsData = response.data.data;
         } else {
           console.warn('Notifications data is not an array:', response.data);
-          // Mock data cho demo
-          notificationsData = [
-            {
-              id: 1,
-              title: 'Đăng ký được chấp thuận',
-              message: 'Đội của bạn "heo" đã được chấp thuận tham gia giải đấu: Giải bóng đá sinh viên TP.HCM 2025',
-              type: 'success',
-              category: 'registration',
-              read: false,
-              timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 phút trước
-              priority: 'low'
-            },
-            {
-              id: 2,
-              title: 'Đăng ký bị từ chối',
-              message: 'Đội của bạn "Đội cầu lông HCMUT" đã bị từ chối tham gia giải đấu: Giải bóng đá sinh viên TP.HCM 2025',
-              type: 'error',
-              category: 'registration',
-              read: false,
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 giờ trước
-              priority: 'medium'
-            },
-            {
-              id: 3,
-              title: 'Đăng ký bị từ chối',
-              message: 'Đội của bạn "heo" đã bị từ chối tham gia giải đấu: Giải bóng đá sinh viên TP.HCM 2025',
-              type: 'error',
-              category: 'registration',
-              read: true,
-              timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 ngày trước
-              priority: 'low'
-            },
-            {
-              id: 4,
-              title: 'Đăng ký được chấp thuận',
-              message: 'Đội của bạn "Đội cầu lông HCMUT" đã được chấp thuận tham gia giải đấu: Giải bóng đá 7 người mùa hè 2025',
-              type: 'success',
-              category: 'registration',
-              read: false,
-              timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 phút trước
-              priority: 'low'
-            }
-          ];
+          notificationsData = [];
         }
         
         console.log('Processed notifications data:', notificationsData);
         setNotifications(notificationsData);
       } catch (error) {
         console.error('Error fetching notifications:', error);
+        
+        // Xử lý lỗi authentication
+        if (error.response?.status === 401) {
+          setToast({ 
+            message: 'Bạn cần đăng nhập để xem thông báo', 
+            type: 'error' 
+          });
+        } else {
+          setToast({ 
+            message: 'Có lỗi xảy ra khi tải thông báo: ' + (error.response?.data?.message || error.message), 
+            type: 'error' 
+          });
+        }
         setNotifications([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchNotifications();
-  }, []);
+    // Chỉ fetch notifications nếu user đã đăng nhập
+    if (user) {
+      fetchNotifications();
+    } else {
+      setLoading(false);
+      setNotifications([]);
+    }
+  }, [user]);
 
-  // Simulate WebSocket connection
+  // Use socket notifications when available
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:3001'); // Mock WebSocket URL
-    
-    ws.onopen = () => {
-      console.log('WebSocket connected');
-    };
-    
-    ws.onmessage = (event) => {
-      const newNotification = JSON.parse(event.data);
-      setNotifications(prev => [newNotification, ...prev]);
-    };
-    
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-    
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
-    };
+    if (socketNotifications && socketNotifications.length > 0) {
+      setNotifications(socketNotifications);
+    }
+  }, [socketNotifications]);
 
-    return () => {
-      ws.close();
-    };
-  }, []);
+  // Update unread count when local notifications change
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const unread = notifications.filter(notification => 
+        !notification.is_read && !notification.read
+      ).length;
+      console.log('NotificationList: Updating unread count:', unread);
+      if (setUnreadCount) {
+        setUnreadCount(unread);
+      }
+    }
+  }, [notifications, setUnreadCount]);
 
   const getTypeColor = (type) => {
     switch (type) {
@@ -264,104 +238,91 @@ const NotificationList = ({ onStatsUpdate }) => {
     return `${days} ngày trước`;
   };
 
-  const markAsRead = async (notificationId) => {
+    // Cải thiện hàm mark as read với error handling tốt hơn
+  const handleMarkAsRead = async (notificationId) => {
     try {
-      // Hiển thị loading state
+      // Thêm vào set processing để disable button
+      setProcessingNotifications(prev => new Set(prev).add(notificationId));
+      
+      // Gọi API để lưu vào database trước
+      await markAsRead(notificationId);
+      
+      // Chỉ cập nhật UI sau khi API thành công
       setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isUpdating: true }
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, read: true, is_read: true } 
             : notification
         )
       );
-
-      // Gọi API để đánh dấu đã đọc
-      const response = await axiosClient.put(`/notifications/${notificationId}/read`);
       
-      if (response.data.success) {
-        // Cập nhật state local
-        setNotifications(prev =>
-          prev.map(notification =>
-            notification.id === notificationId
-              ? { ...notification, read: true, isUpdating: false }
-              : notification
-          )
-        );
-        
-        // Hiển thị thông báo thành công
-        setToast({ message: 'Đã đánh dấu thông báo là đã đọc!', type: 'success' });
-        
-        // Cập nhật thống kê nếu có callback
-        if (onStatsUpdate) {
-          onStatsUpdate();
-        }
-      } else {
-        throw new Error(response.data.message || 'Có lỗi xảy ra');
+      // Cập nhật unreadCount trong SocketContext
+      if (setUnreadCount) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+      
+      setToast({ message: 'Đã đánh dấu thông báo là đã đọc!', type: 'success' });
+      if (onStatsUpdate) {
+        onStatsUpdate();
       }
     } catch (error) {
       console.error('Error marking notification as read:', error);
       
-      // Khôi phục trạng thái nếu có lỗi
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isUpdating: false }
-            : notification
-        )
-      );
-      
-      // Hiển thị thông báo lỗi chi tiết hơn
-      const errorMessage = error.response?.data?.message || error.message;
       setToast({ 
-        message: 'Có lỗi xảy ra khi đánh dấu đã đọc: ' + errorMessage, 
+        message: 'Có lỗi xảy ra khi đánh dấu đã đọc: ' + (error.response?.data?.message || error.message), 
         type: 'error' 
+      });
+    } finally {
+      // Xóa khỏi set processing
+      setProcessingNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(notificationId);
+        return newSet;
       });
     }
   };
 
-  const markAllAsRead = async () => {
+  // Cải thiện hàm mark all as read với error handling tốt hơn
+  const handleMarkAllAsRead = async () => {
     try {
-      // Hiển thị loading state cho tất cả notifications
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, isUpdating: true }))
-      );
-
-      // Gọi API để đánh dấu tất cả đã đọc
-      const response = await axiosClient.put('/notifications/read-all');
+      // Thêm vào set processing để disable button
+      setProcessingNotifications(prev => new Set(prev).add('all'));
       
-      if (response.data.success) {
-        // Cập nhật state local
-        setNotifications(prev =>
-          prev.map(notification => ({ ...notification, read: true, isUpdating: false }))
-        );
-        
-        // Hiển thị thông báo thành công
-        setToast({ message: 'Đã đánh dấu tất cả thông báo là đã đọc!', type: 'success' });
-        
-        // Cập nhật thống kê nếu có callback
-        if (onStatsUpdate) {
-          onStatsUpdate();
-        }
-      } else {
-        throw new Error(response.data.message || 'Có lỗi xảy ra');
+      // Gọi API để lưu vào database trước
+      await markAllAsRead();
+      
+      // Chỉ cập nhật UI sau khi API thành công
+      setNotifications(prev =>
+        prev.map(notification => ({ ...notification, read: true, is_read: true }))
+      );
+      
+      // Cập nhật unreadCount trong SocketContext
+      if (setUnreadCount) {
+        setUnreadCount(0);
+      }
+      
+      setToast({ message: 'Đã đánh dấu tất cả thông báo là đã đọc!', type: 'success' });
+      if (onStatsUpdate) {
+        onStatsUpdate();
       }
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       
-      // Khôi phục trạng thái nếu có lỗi
-      setNotifications(prev =>
-        prev.map(notification => ({ ...notification, isUpdating: false }))
-      );
-      
-      // Hiển thị thông báo lỗi chi tiết hơn
-      const errorMessage = error.response?.data?.message || error.message;
       setToast({ 
-        message: 'Có lỗi xảy ra khi đánh dấu tất cả đã đọc: ' + errorMessage, 
+        message: 'Có lỗi xảy ra khi đánh dấu tất cả đã đọc: ' + (error.response?.data?.message || error.message), 
         type: 'error' 
+      });
+    } finally {
+      // Xóa khỏi set processing
+      setProcessingNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete('all');
+        return newSet;
       });
     }
   };
 
+  // Cải thiện hàm delete notification với error handling tốt hơn
   const deleteNotification = async (notificationId) => {
     try {
       // Xác nhận trước khi xóa
@@ -369,45 +330,38 @@ const NotificationList = ({ onStatsUpdate }) => {
         return;
       }
 
-      // Hiển thị loading state
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isDeleting: true }
-            : notification
-        )
-      );
+      // Thêm vào set processing để disable button
+      setProcessingNotifications(prev => new Set(prev).add(`delete-${notificationId}`));
 
       // Gọi API để xóa notification
       const response = await axiosClient.delete(`/notifications/${notificationId}`);
       
       if (response.data.success) {
-        // Xóa khỏi state local
-        setNotifications(prev =>
-          prev.filter(notification => notification.id !== notificationId)
-        );
-        
-        // Hiển thị thông báo thành công
-        setToast({ message: 'Đã xóa thông báo thành công!', type: 'success' });
-        
-        // Cập nhật thống kê nếu có callback
-        if (onStatsUpdate) {
-          onStatsUpdate();
+              // Xóa khỏi state local
+      setNotifications(prev =>
+        prev.filter(notification => notification.id !== notificationId)
+      );
+      
+      // Cập nhật unreadCount nếu notification bị xóa chưa đọc
+      const deletedNotification = notifications.find(n => n.id === notificationId);
+      if (deletedNotification && (!deletedNotification.is_read || !deletedNotification.read)) {
+        if (setUnreadCount) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
         }
+      }
+      
+      // Hiển thị thông báo thành công
+      setToast({ message: 'Đã xóa thông báo thành công!', type: 'success' });
+      
+      // Cập nhật thống kê nếu có callback
+      if (onStatsUpdate) {
+        onStatsUpdate();
+      }
       } else {
         throw new Error(response.data.message || 'Có lỗi xảy ra');
       }
     } catch (error) {
       console.error('Error deleting notification:', error);
-      
-      // Khôi phục trạng thái nếu có lỗi
-      setNotifications(prev =>
-        prev.map(notification =>
-          notification.id === notificationId
-            ? { ...notification, isDeleting: false }
-            : notification
-        )
-      );
       
       // Hiển thị thông báo lỗi chi tiết hơn
       const errorMessage = error.response?.data?.message || error.message;
@@ -415,13 +369,20 @@ const NotificationList = ({ onStatsUpdate }) => {
         message: 'Có lỗi xảy ra khi xóa thông báo: ' + errorMessage, 
         type: 'error' 
       });
+    } finally {
+      // Xóa khỏi set processing
+      setProcessingNotifications(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(`delete-${notificationId}`);
+        return newSet;
+      });
     }
   };
 
   const filteredNotifications = notifications.filter(notification => {
     // Filter by read status
-    if (filter === 'unread') return !notification.read;
-    if (filter === 'read') return notification.read;
+    if (filter === 'unread') return (!notification.read && !notification.is_read);
+    if (filter === 'read') return (notification.read || notification.is_read);
     
     // Filter by category
     if (selectedCategory !== 'all' && notification.category !== selectedCategory) {
@@ -431,8 +392,8 @@ const NotificationList = ({ onStatsUpdate }) => {
     return true;
   });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
-  const isUpdatingAll = notifications.some(n => n.isUpdating);
+  const localUnreadCount = notifications.filter(n => !n.read && !n.is_read).length;
+  const isUpdatingAll = processingNotifications.has('all');
 
   if (loading) {
     return (
@@ -476,11 +437,11 @@ const NotificationList = ({ onStatsUpdate }) => {
           </select>
         </div>
 
-        {unreadCount > 0 && (
+        {localUnreadCount > 0 && (
           <Button
             variant="outline"
             size="sm"
-            onClick={markAllAsRead}
+            onClick={handleMarkAllAsRead}
             disabled={isUpdatingAll}
             className="ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -505,101 +466,117 @@ const NotificationList = ({ onStatsUpdate }) => {
             </svg>
             <h3 className="mt-2 text-sm font-medium text-gray-900">Không có thông báo</h3>
             <p className="mt-1 text-sm text-gray-500">
-              {filter === 'unread' ? 'Bạn đã đọc tất cả thông báo' : 'Chưa có thông báo nào'}
+              {filter === 'unread' ? 'Bạn đã đọc tất cả thông báo' : 'Bạn chưa có thông báo nào. Thông báo sẽ xuất hiện khi có sự kiện liên quan đến bạn.'}
             </p>
+            {user && (
+              <div className="mt-4 text-xs text-gray-400">
+                <p>Bạn sẽ nhận được thông báo khi:</p>
+                <ul className="mt-2 space-y-1 text-left max-w-md mx-auto">
+                  <li>• Admin tạo giải đấu mới</li>
+                  <li>• Đăng ký tham gia giải đấu được duyệt/từ chối</li>
+                  <li>• Có lịch thi đấu mới</li>
+                  <li>• Giải đấu bắt đầu</li>
+                </ul>
+              </div>
+            )}
           </div>
         ) : (
-          filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`p-4 rounded-lg border transition-all hover:shadow-md ${
-                !notification.read 
-                  ? 'bg-blue-50 border-blue-200' 
-                  : 'bg-white border-gray-200'
-              }`}
-            >
-              <div className="flex items-start space-x-3">
-                <div className={`flex-shrink-0 p-2 rounded-full ${getTypeColor(notification.type)}`}>
-                  {getTypeIcon(notification.type)}
-                </div>
-                <div className="flex-shrink-0">
-                  <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(notification.type)}`}>
-                    {getTypeText(notification.type)}
-                  </span>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <p className={`text-sm font-medium ${
-                          !notification.read ? 'text-gray-900' : 'text-gray-600'
-                        }`}>
-                          {notification.title}
-                        </p>
-                        {notification.priority && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(notification.priority)}`}>
-                            {getPriorityText(notification.priority)}
-                          </span>
-                        )}
-                        {notification.category && (
-                          <div className="flex items-center space-x-1 text-gray-500">
-                            {getCategoryIcon(notification.category)}
-                            <span className="text-xs">{getCategoryText(notification.category)}</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm text-gray-600 mb-2">
-                        {notification.message}
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-end space-y-2">
-                      <span className="text-xs text-gray-500">
-                        {formatTimeAgo(notification.timestamp)}
-                      </span>
-                      {!notification.read && (
-                        <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
-                      )}
-                    </div>
+          filteredNotifications.map((notification) => {
+            const isProcessing = processingNotifications.has(notification.id);
+            const isDeleting = processingNotifications.has(`delete-${notification.id}`);
+            
+            return (
+              <div
+                key={notification.id}
+                className={`p-4 rounded-lg border transition-all hover:shadow-md ${
+                  (!notification.read && !notification.is_read)
+                    ? 'bg-blue-50 border-blue-200' 
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className={`flex-shrink-0 p-2 rounded-full ${getTypeColor(notification.type)}`}>
+                    {getTypeIcon(notification.type)}
+                  </div>
+                  <div className="flex-shrink-0">
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(notification.type)}`}>
+                      {getTypeText(notification.type)}
+                    </span>
                   </div>
                   
-                  <div className="flex items-center space-x-3 mt-3 pt-2 border-t border-gray-100">
-                    {!notification.read && !notification.isUpdating && (
-                      <button
-                        onClick={() => markAsRead(notification.id)}
-                        disabled={notification.isDeleting}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Đánh dấu đã đọc
-                      </button>
-                    )}
-                    {notification.isUpdating && (
-                      <span className="text-xs text-blue-600 font-medium flex items-center">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-1"></div>
-                        Đang xử lý...
-                      </span>
-                    )}
-                    <button
-                      onClick={() => deleteNotification(notification.id)}
-                      disabled={notification.isUpdating || notification.isDeleting}
-                      className="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {notification.isDeleting ? (
-                        <span className="flex items-center">
-                          <div className="animate-spin rounded-full h-3 w-3 border-b border-red-600 mr-1"></div>
-                          Đang xóa...
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <p className={`text-sm font-medium ${
+                            (!notification.read && !notification.is_read) ? 'text-gray-900' : 'text-gray-600'
+                          }`}>
+                            {notification.title}
+                          </p>
+                          {notification.priority && (
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(notification.priority)}`}>
+                              {getPriorityText(notification.priority)}
+                            </span>
+                          )}
+                          {notification.category && (
+                            <div className="flex items-center space-x-1 text-gray-500">
+                              {getCategoryIcon(notification.category)}
+                              <span className="text-xs">{getCategoryText(notification.category)}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <p className="text-sm text-gray-600 mb-2">
+                          {notification.message}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col items-end space-y-2">
+                        <span className="text-xs text-gray-500">
+                          {formatTimeAgo(notification.timestamp)}
                         </span>
-                      ) : (
-                        'Xóa'
+                        {(!notification.read && !notification.is_read) && (
+                          <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3 mt-3 pt-2 border-t border-gray-100">
+                      {(!notification.read && !notification.is_read) && !isProcessing && (
+                        <button
+                          onClick={() => handleMarkAsRead(notification.id)}
+                          disabled={isProcessing || isDeleting}
+                          className="text-xs text-blue-600 hover:text-blue-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Đánh dấu đã đọc
+                        </button>
                       )}
-                    </button>
+                      {isProcessing && (
+                        <span className="text-xs text-blue-600 font-medium flex items-center">
+                          <div className="animate-spin rounded-full h-3 w-3 border-b border-blue-600 mr-1"></div>
+                          Đang xử lý...
+                        </span>
+                      )}
+                      <button
+                        onClick={() => deleteNotification(notification.id)}
+                        disabled={isProcessing || isDeleting}
+                        className="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isDeleting ? (
+                          <span className="flex items-center">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b border-red-600 mr-1"></div>
+                            Đang xóa...
+                          </span>
+                        ) : (
+                          'Xóa'
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 

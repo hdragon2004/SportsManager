@@ -20,7 +20,9 @@ const RequestPermissionForm = () => {
       setLoading(true);
       setMessage('');
       
+      console.log('Sending request with reason:', reason);
       const response = await requestCoachRole(reason);
+      console.log('Response received:', response);
       
       if (response.data.success) {
         setMessage('Yêu cầu xin quyền huấn luyện viên đã được gửi thành công!');
@@ -32,6 +34,7 @@ const RequestPermissionForm = () => {
       }
     } catch (error) {
       console.error('Error requesting coach role:', error);
+      console.error('Error details:', error.response?.data);
       setMessage(error.response?.data?.message || 'Có lỗi xảy ra khi gửi yêu cầu');
       setMessageType('error');
     } finally {

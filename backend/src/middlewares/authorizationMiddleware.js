@@ -9,6 +9,7 @@ export const checkDataAccess = (resourceType) => {
       const userId = req.user?.userId;
       
       if (!userId) {
+        console.error('User not found in request:', req.user);
         return next(new ApiError(StatusCodes.UNAUTHORIZED, 'Không tìm thấy thông tin người dùng'));
       }
 
@@ -130,28 +131,37 @@ const checkTournamentAccess = async (req, res, next) => {
       return next(new ApiError(StatusCodes.NOT_FOUND, 'Không tìm thấy giải đấu'));
     }
 
-    // Kiểm tra nếu tournament đang trong giai đoạn đăng ký thì cho phép xem
-    const now = new Date();
-    const registrationDeadline = new Date(tournament.signup_deadline || tournament.registration_deadline);
-    
-    if (now < registrationDeadline) {
-      // Tournament đang trong giai đoạn đăng ký, cho phép xem
+    // Cho phép tất cả user xem tournament (public access)
+    // Chỉ kiểm tra quyền khi thực hiện các thao tác chỉnh sửa
+    const method = req.method;
+    if (method === 'GET') {
+      // Cho phép xem tournament
       return next();
-    }
+    } else {
+      // Đối với các thao tác khác (POST, PUT, DELETE), kiểm tra quyền
+      // Kiểm tra nếu tournament đang trong giai đoạn đăng ký thì cho phép đăng ký
+      const now = new Date();
+      const registrationDeadline = new Date(tournament.signup_deadline || tournament.registration_deadline);
+      
+      if (now < registrationDeadline) {
+        // Tournament đang trong giai đoạn đăng ký, cho phép đăng ký
+        return next();
+      }
 
-    // Nếu không trong giai đoạn đăng ký, kiểm tra xem user có đăng ký tham gia không
-    const registration = await models.Registration.findOne({
-      where: {
-        Tournament_ID: tournamentId
-      },
-      include: [{
-        model: models.Team,
-        where: { User_ID: userId }
-      }]
-    });
+      // Nếu không trong giai đoạn đăng ký, kiểm tra xem user có đăng ký tham gia không
+      const registration = await models.Registration.findOne({
+        where: {
+          Tournament_ID: tournamentId
+        },
+        include: [{
+          model: models.Team,
+          where: { User_ID: userId }
+        }]
+      });
 
-    if (!registration) {
-      return next(new ApiError(StatusCodes.FORBIDDEN, 'Không có quyền truy cập thông tin giải đấu này'));
+      if (!registration) {
+        return next(new ApiError(StatusCodes.FORBIDDEN, 'Không có quyền truy cập thông tin giải đấu này'));
+      }
     }
   }
 
@@ -170,30 +180,39 @@ const checkMatchAccess = async (req, res, next) => {
     return next();
   }
 
-  if (matchId) {
-    // Kiểm tra xem match có thuộc tournament mà user tham gia không
-    const match = await models.Match.findByPk(matchId, {
-      include: [{
-        model: models.Tournament,
+  // Cho phép tất cả user xem matches (public access)
+  // Chỉ kiểm tra quyền khi thực hiện các thao tác chỉnh sửa
+  const method = req.method;
+  if (method === 'GET') {
+    // Cho phép xem matches
+    return next();
+  } else {
+    // Đối với các thao tác khác (POST, PUT, DELETE), kiểm tra quyền
+    if (matchId) {
+      // Kiểm tra xem match có thuộc tournament mà user tham gia không
+      const match = await models.Match.findByPk(matchId, {
         include: [{
-          model: models.Registration,
+          model: models.Tournament,
           include: [{
-            model: models.Team,
-            where: { User_ID: userId }
+            model: models.Registration,
+            include: [{
+              model: models.Team,
+              where: { User_ID: userId }
+            }]
           }]
         }]
-      }]
-    });
+      });
 
-    if (!match || !match.Tournament.Registrations.length) {
-      return next(new ApiError(StatusCodes.FORBIDDEN, 'Không có quyền truy cập thông tin trận đấu này'));
+      if (!match || !match.Tournament.Registrations.length) {
+        return next(new ApiError(StatusCodes.FORBIDDEN, 'Không có quyền truy cập thông tin trận đấu này'));
+      }
     }
-  }
 
-  if (tournamentId) {
-    // Kiểm tra quyền truy cập tournament
-    await checkTournamentAccess(req, res, next);
-    return;
+    if (tournamentId) {
+      // Kiểm tra quyền truy cập tournament
+      await checkTournamentAccess(req, res, next);
+      return;
+    }
   }
 
   next();
@@ -236,33 +255,7 @@ const checkRegistrationAccess = async (req, res, next) => {
 
 // Kiểm tra quyền truy cập notification data
 const checkNotificationAccess = async (req, res, next) => {
-  const userId = req.user.userId;
-  const notificationId = req.params.id || req.body.Notification_ID;
-  const targetUserId = req.params.userId || req.body.User_ID;
-
-  // Kiểm tra nếu user có role admin thì cho phép truy cập tất cả
-  const isAdmin = req.userRoles?.some(role => role.name === 'admin');
-  if (isAdmin) {
-    return next();
-  }
-
-  if (notificationId) {
-    // Kiểm tra xem notification có thuộc về user không
-    const notification = await models.Notification.findByPk(notificationId);
-
-    if (!notification || notification.User_ID !== userId) {
-      return next(new ApiError(StatusCodes.FORBIDDEN, 'Không có quyền truy cập thông báo này'));
-    }
-  }
-
-  // Kiểm tra quyền truy cập thông báo của user khác
-  if (targetUserId) {
-    const targetUserIdInt = parseInt(targetUserId);
-    if (isNaN(targetUserIdInt) || targetUserIdInt !== userId) {
-      return next(new ApiError(StatusCodes.FORBIDDEN, 'Không có quyền truy cập thông báo của người khác'));
-    }
-  }
-
+  // Tất cả user đều có thể truy cập tất cả notifications
   next();
 };
 

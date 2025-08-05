@@ -9,6 +9,7 @@ import {
   deleteRegistration as deleteRegistrationService
 } from '../services/registrationService';
 import { socketManager } from '~/socket/socketManager';
+import { tournamentEvents } from '~/socket/tournamentEvents';
 import models from '~/models';
 
 export async function getAllRegistrations(req, res) {
@@ -156,7 +157,77 @@ export async function createRegistration(req, res) {
       });
     }
     
+    // Kiểm tra xem đội đã đăng ký giải đấu này chưa
+    const existingRegistration = await models.Registration.findOne({
+      where: {
+        Tournament_ID: req.body.Tournament_ID,
+        Team_ID: req.body.Team_ID,
+        status: 'active' // Chỉ kiểm tra các đăng ký đang hoạt động
+      }
+    });
+    
+    if (existingRegistration) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: 'Đội của bạn đã đăng ký tham gia giải đấu này. Không thể đăng ký lại.'
+      });
+    }
+    
+    // Kiểm tra số lượng đăng ký hiện tại
+    const currentRegistrations = await models.Registration.count({
+      where: {
+        Tournament_ID: req.body.Tournament_ID,
+        approval_status: ['pending', 'approved'] // Chỉ đếm các đăng ký đang chờ hoặc đã được chấp thuận
+      }
+    });
+    
+    // Kiểm tra nếu đã đủ số lượng đội tối đa
+    if (tournament.max_teams && currentRegistrations >= tournament.max_teams) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        message: `Giải đấu đã đủ số lượng đội tham gia (${tournament.max_teams} đội). Đăng ký đã được đóng.`
+      });
+    }
+    
     const registration = await createRegistrationService(req.body);
+    
+    // Kiểm tra lại sau khi tạo đăng ký để xem có cần đóng đăng ký không
+    const updatedRegistrations = await models.Registration.count({
+      where: {
+        Tournament_ID: req.body.Tournament_ID,
+        approval_status: ['pending', 'approved']
+      }
+    });
+    
+    // Nếu đã đủ số lượng đội, cập nhật deadline về thời gian hiện tại
+    if (tournament.max_teams && updatedRegistrations >= tournament.max_teams) {
+      await models.Tournament.update(
+        { signup_deadline: new Date() },
+        { where: { id: req.body.Tournament_ID } }
+      );
+      
+      console.log(`Tournament ${tournament.name} (ID: ${tournament.id}) đã đủ số lượng đội và đóng đăng ký tự động`);
+    }
+    
+    // Emit realtime event khi coach đăng ký đội
+    try {
+      const team = await models.Team.findByPk(registration.Team_ID);
+      const tournament = await models.Tournament.findByPk(registration.Tournament_ID);
+      const coach = await models.User.findByPk(team.User_ID);
+      
+      if (team && tournament && coach) {
+        await tournamentEvents.emitNewRegistration({
+          tournamentId: tournament.id,
+          teamName: team.name,
+          coachName: coach.name,
+          registrationId: registration.id
+        });
+      }
+    } catch (socketError) {
+      console.error('Error emitting new registration event:', socketError);
+      // Continue with the response even if socket notification fails
+    }
+    
     res.status(StatusCodes.CREATED).json({ success: true, data: registration });
   } catch (error) {
     console.error('Error creating registration:', error);
@@ -236,6 +307,39 @@ export async function deleteRegistration(req, res) {
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
       success: false, 
       message: 'Error deleting registration',
+      error: error.message
+    });
+  }
+} 
+
+export async function checkTeamRegistration(req, res) {
+  try {
+    const { tournamentId, teamId } = req.params;
+    
+    const existingRegistration = await models.Registration.findOne({
+      where: {
+        Tournament_ID: tournamentId,
+        Team_ID: teamId,
+        status: 'active'
+      },
+      include: [
+        { model: models.Tournament },
+        { model: models.Team }
+      ]
+    });
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        isRegistered: !!existingRegistration,
+        registration: existingRegistration
+      }
+    });
+  } catch (error) {
+    console.error('Error checking team registration:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error checking team registration',
       error: error.message
     });
   }

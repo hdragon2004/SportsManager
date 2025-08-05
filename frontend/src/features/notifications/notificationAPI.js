@@ -16,10 +16,10 @@ export const updateNotification = (id, data) => axiosInstance.put(`/notification
 export const deleteNotification = (id) => axiosInstance.delete(`/notifications/${id}`);
 
 // Đánh dấu notification đã đọc
-export const markNotificationAsRead = (id) => axiosInstance.patch(`/notifications/${id}/read`);
+export const markNotificationAsRead = (id) => axiosInstance.put(`/notifications/${id}/read`);
 
 // Đánh dấu tất cả notifications đã đọc
-export const markAllNotificationsAsRead = () => axiosInstance.patch('/notifications/read-all');
+export const markAllNotificationsAsRead = () => axiosInstance.put('/users/notifications/read-all');
 
 // Lấy notifications chưa đọc
 export const getUnreadNotifications = () => axiosInstance.get('/notifications/unread');

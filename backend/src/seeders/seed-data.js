@@ -111,8 +111,8 @@ module.exports = {
     },
     {
       id: 3,
-      name: 'moderator',
-      description: 'Moderator',
+      name: 'coach',
+      description: 'Huấn luyện viên',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -143,7 +143,7 @@ module.exports = {
       Role_ID: 3,
       status: 'approved',
       requestDate: new Date(),
-      reason: 'Moderator role',
+      reason: 'Coach role',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -387,7 +387,7 @@ module.exports = {
       max_teams: 16,
       banner_url: 'https://via.placeholder.com/800x400',
       description: 'Giải đấu bóng đá sinh viên các trường ĐH tại TP.HCM',
-      status: 'registration',
+      status: 'upcoming',
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -404,7 +404,7 @@ module.exports = {
       max_teams: 8,
       banner_url: 'https://via.placeholder.com/800x400',
       description: 'Giải đấu bóng đá 7 người mùa hè',
-      status: 'registration',
+      status: 'upcoming',
       createdAt: new Date(),
       updatedAt: new Date()
     },

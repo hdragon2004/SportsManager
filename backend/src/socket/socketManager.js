@@ -14,6 +14,8 @@ const SOCKET_EVENTS = {
   NEW_SCHEDULE: 'newSchedule',
   MATCH_RESULT_UPDATED: 'matchResultUpdated',
   REGISTRATION_STATUS: 'registrationStatus',
+  TODAY_TOURNAMENT_NOTIFICATION: 'todayTournamentNotification',
+  MATCH_REMINDER_NOTIFICATION: 'matchReminderNotification',
   
   // Notification received acknowledgment
   NOTIFICATION_RECEIVED: 'notificationReceived'

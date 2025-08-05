@@ -32,8 +32,28 @@ const getTournamentById = async (id) => {
 
 const createTournament = async (tournamentData) => {
   const tournament = await models.Tournament.create(tournamentData);
+  
   // Sau khi tạo mới, ta lấy lại đầy đủ thông tin để trả về
-  return getTournamentById(tournament.id);
+  const createdTournament = await getTournamentById(tournament.id);
+  
+  // Gửi thông báo đến tất cả users khi tạo giải đấu mới
+  try {
+    const { TournamentEvents } = require('../socket/tournamentEvents');
+    const tournamentEvents = new TournamentEvents();
+    
+    await tournamentEvents.emitTournamentCreated({
+      tournamentId: tournament.id,
+      tournamentName: tournament.name,
+      createdBy: tournamentData.createdBy || 'Admin'
+    });
+    
+    console.log(`Đã gửi thông báo tạo giải đấu mới: ${tournament.name}`);
+  } catch (error) {
+    console.error('Lỗi khi gửi thông báo tạo giải đấu:', error);
+    // Không throw error để không ảnh hưởng đến việc tạo tournament
+  }
+  
+  return createdTournament;
 };
 
 const updateTournament = async (id, updateData) => {

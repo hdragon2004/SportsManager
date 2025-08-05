@@ -12,7 +12,7 @@ File seed data được tạo để populate database với dữ liệu mẫu đ
 ### 2. Roles (3 roles)
 - admin: Administrator
 - user: Regular user  
-- moderator: Moderator
+- coach: Coach
 
 ### 3. Tournament Types (5 types)
 - Bóng đá 11 người

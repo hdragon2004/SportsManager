@@ -64,4 +64,26 @@ export const getAllRoles = async () => {
     console.error('Error fetching roles:', error);
     throw error;
   }
+};
+
+// Lấy danh sách yêu cầu xin quyền huấn luyện viên (cho admin)
+export const getCoachRoleRequests = async () => {
+  try {
+    const response = await axiosClient.get('/coach-role-requests');
+    return response;
+  } catch (error) {
+    console.error('Error fetching coach role requests:', error);
+    throw error;
+  }
+};
+
+// Xử lý yêu cầu xin quyền huấn luyện viên (cho admin)
+export const processCoachRoleRequest = async (id, data) => {
+  try {
+    const response = await axiosClient.put(`/coach-role-requests/${id}/process`, data);
+    return response;
+  } catch (error) {
+    console.error('Error processing coach role request:', error);
+    throw error;
+  }
 }; 

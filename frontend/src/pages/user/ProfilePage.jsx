@@ -1,19 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import axiosClient from '../../services/axiosClient';
 import RequestPermissionForm from '../../components/RequestPermissionForm';
-import PermissionStatus from '../../components/PermissionStatus';
+import { getAllPermissions } from '../../features/permissions/permissionAPI';
 
 const ProfilePage = () => {
-  const { user, isCoach, isAdmin, isModerator } = useAuth();
+  const { user, isCoach, isAdmin } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [permissions, setPermissions] = useState([]);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
     address: user?.address || ''
   });
+
+  useEffect(() => {
+    if (user) {
+      fetchUserPermissions();
+    }
+  }, [user]);
+
+  const fetchUserPermissions = async () => {
+    try {
+      setLoadingPermissions(true);
+      const response = await getAllPermissions();
+      if (response.data.success) {
+        // Lọc chỉ những permission của user hiện tại
+        const userPermissions = response.data.data.filter(
+          permission => permission.User_ID === user.id
+        );
+        setPermissions(userPermissions);
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -50,7 +76,31 @@ const ProfilePage = () => {
     setIsEditing(false);
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
 
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'approved':
+        return 'Đã duyệt';
+      case 'rejected':
+        return 'Đã từ chối';
+      case 'pending':
+        return 'Đang chờ';
+      default:
+        return 'Không xác định';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -77,7 +127,7 @@ const ProfilePage = () => {
               <h2 className="text-2xl font-semibold text-white">Thông tin cá nhân</h2>
               <div className="flex items-center space-x-3">
                 {/* Button xin quyền huấn luyện viên - chỉ hiển thị cho user có role "user" */}
-                {!isCoach && !isAdmin && !isModerator && (
+                {!isCoach && !isAdmin && (
                   <button
                     onClick={() => setShowRequestModal(true)}
                     className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-xl hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-lg flex items-center space-x-2"
@@ -197,6 +247,121 @@ const ProfilePage = () => {
               </div>
             </div>
 
+            {/* Quyền hạn */}
+            <div className="mt-12">
+              <h3 className="text-xl font-semibold text-white mb-6">Quyền hạn</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 hover:border-[#30ddff]/30 transition-all duration-300">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Vai trò hiện tại</p>
+                      <p className="text-lg font-bold text-white">
+                        {isAdmin ? 'Admin' : isCoach ? 'Huấn luyện viên' : 'Người dùng'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 hover:border-[#30ddff]/30 transition-all duration-300">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Yêu cầu quyền</p>
+                      <p className="text-lg font-bold text-white">
+                        {permissions.length > 0 ? `${permissions.length} yêu cầu` : 'Chưa có'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 hover:border-[#30ddff]/30 transition-all duration-300">
+                  <div className="flex items-center">
+                    <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+                      <svg className="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-400">Trạng thái</p>
+                      <p className="text-lg font-bold text-white">
+                        {isCoach ? 'Đã có quyền' : 'Chưa có quyền'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Lịch sử yêu cầu quyền */}
+            {permissions.length > 0 && (
+              <div className="mt-12">
+                <h3 className="text-xl font-semibold text-white mb-6">Lịch sử yêu cầu quyền</h3>
+                
+                <div className="space-y-4">
+                  {permissions.map((permission) => (
+                    <div
+                      key={permission.id}
+                      className="bg-gray-800/80 backdrop-blur-xl border border-gray-700 rounded-2xl p-6 hover:bg-gray-700/50 transition-all duration-300"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-white">Xin quyền Huấn luyện viên</h4>
+                            <p className="text-sm text-gray-400">
+                              Yêu cầu ngày {new Date(permission.requestDate).toLocaleDateString('vi-VN')}
+                            </p>
+                          </div>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(permission.status)}`}>
+                          {getStatusText(permission.status)}
+                        </span>
+                      </div>
+
+                      {permission.reason && (
+                        <div className="mt-4 bg-gray-700/50 rounded-lg p-4">
+                          <h5 className="text-sm font-medium text-gray-300 mb-2">Lý do:</h5>
+                          <p className="text-gray-400">{permission.reason}</p>
+                        </div>
+                      )}
+
+                      {permission.status === 'rejected' && permission.note && (
+                        <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                          <h5 className="text-sm font-medium text-red-400 mb-2">Lý do từ chối:</h5>
+                          <p className="text-red-300">{permission.note}</p>
+                        </div>
+                      )}
+
+                      {permission.status === 'approved' && (
+                        <div className="mt-4 bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-green-400 font-medium">Quyền đã được cấp thành công!</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Thống kê */}
             <div className="mt-12">
               <h3 className="text-xl font-semibold text-white mb-6">Thống kê hoạt động</h3>
@@ -247,9 +412,6 @@ const ProfilePage = () => {
             </div>
           </div>
         </div>
-
-        {/* Trạng thái yêu cầu quyền */}
-        <PermissionStatus userId={user?.id} />
 
         {/* Modal xin quyền huấn luyện viên */}
         {showRequestModal && (

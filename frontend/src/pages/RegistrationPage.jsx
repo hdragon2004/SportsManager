@@ -20,28 +20,28 @@ const RegistrationPage = () => {
 
   // Kiểm tra quyền đăng ký
   const canRegister = () => {
-    if (!user) {
-      console.log('canRegister - No user');
+    if (!tournament) return false;
+    
+    // Kiểm tra deadline
+    if (tournament.signup_deadline && new Date() > new Date(tournament.signup_deadline)) {
       return false;
     }
     
-    console.log('canRegister - User:', user);
-    console.log('canRegister - User roles:', user.Roles);
-    
-    // Kiểm tra nếu user có roles
-    if (!user.Roles || user.Roles.length === 0) {
-      console.log('canRegister - No roles found');
+    // Kiểm tra số lượng đội đã đăng ký
+    if (tournament.max_teams && (tournament.Registrations?.length || 0) >= tournament.max_teams) {
       return false;
     }
     
-    const hasPermission = user.Roles.some(role => {
-      const isAllowed = role.name === 'admin' || role.name === 'moderator' || role.name === 'coach';
-      console.log(`canRegister - Role ${role.name}: ${isAllowed}`);
-      return isAllowed;
-    });
+    return true;
+  };
+
+  const hasTeamRegistered = () => {
+    if (!tournament || !userTeams.length) return false;
     
-    console.log('canRegister - Has permission:', hasPermission);
-    return hasPermission;
+    // Kiểm tra xem có đội nào của user đã đăng ký giải đấu này chưa
+    return tournament.Registrations?.some(registration => 
+      userTeams.some(team => team.id === registration.Team_ID)
+    );
   };
 
   useEffect(() => {
@@ -186,8 +186,49 @@ const RegistrationPage = () => {
     return (
       <div className="flex items-center justify-center min-h-screen bg-black">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Không có quyền đăng ký</h2>
-          <p className="text-gray-400 mb-4">Chỉ huấn luyện viên và admin mới có thể đăng ký tham gia giải đấu.</p>
+          <h2 className="text-2xl font-bold text-white mb-4">Đăng ký đã đóng</h2>
+          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-red-400 font-semibold text-lg">Không thể đăng ký</span>
+            </div>
+            <div className="text-red-300 text-sm space-y-2">
+              {tournament?.signup_deadline && new Date() > new Date(tournament.signup_deadline) && (
+                <p>• Đã quá hạn đăng ký (Hạn chót: {new Date(tournament.signup_deadline).toLocaleDateString('vi-VN')})</p>
+              )}
+              {tournament?.max_teams && (tournament.Registrations?.length || 0) >= tournament.max_teams && (
+                <p>• Giải đấu đã đủ số lượng đội tham gia ({tournament.max_teams} đội)</p>
+              )}
+            </div>
+          </div>
+          <Link to="/tournaments" className="bg-[#30ddff] hover:bg-[#00b8d4] text-white px-6 py-2 rounded-lg transition-colors">
+            Quay lại danh sách giải đấu
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Kiểm tra xem đội đã đăng ký giải đấu này chưa
+  if (hasTeamRegistered()) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">Đã đăng ký</h2>
+          <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-6 mb-6">
+            <div className="flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-yellow-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <span className="text-yellow-400 font-semibold text-lg">Đội đã đăng ký</span>
+            </div>
+            <div className="text-yellow-300 text-sm space-y-2">
+              <p>• Một trong các đội của bạn đã đăng ký tham gia giải đấu này</p>
+              <p>• Không thể đăng ký lại với cùng một giải đấu</p>
+            </div>
+          </div>
           <Link to="/tournaments" className="bg-[#30ddff] hover:bg-[#00b8d4] text-white px-6 py-2 rounded-lg transition-colors">
             Quay lại danh sách giải đấu
           </Link>
@@ -258,14 +299,40 @@ const RegistrationPage = () => {
                   }`}
                 >
                   <option value="">Chọn đội bóng</option>
-                  {userTeams.map((team) => (
-                    <option key={team.id} value={team.id}>
-                      {team.name} - {team.description || 'Không có mô tả'}
-                    </option>
-                  ))}
+                  {userTeams
+                    .filter(team => {
+                      // Lọc ra các đội chưa đăng ký giải đấu này
+                      return !tournament.Registrations?.some(registration => 
+                        registration.Team_ID === team.id
+                      );
+                    })
+                    .map((team) => (
+                      <option key={team.id} value={team.id}>
+                        {team.name} - {team.description || 'Không có mô tả'}
+                      </option>
+                    ))}
                 </select>
                 {errors.teamId && (
                   <p className="text-red-500 text-sm mt-1">{errors.teamId}</p>
+                )}
+                
+                {/* Hiển thị thông báo về các đội đã đăng ký */}
+                {userTeams.some(team => 
+                  tournament.Registrations?.some(registration => 
+                    registration.Team_ID === team.id
+                  )
+                ) && (
+                  <div className="mt-3 p-3 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+                    <div className="flex items-center mb-2">
+                      <svg className="w-4 h-4 text-yellow-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <span className="text-yellow-400 text-sm font-medium">Đội đã đăng ký</span>
+                    </div>
+                    <p className="text-yellow-300 text-xs">
+                      Một số đội của bạn đã đăng ký giải đấu này và không hiển thị trong danh sách.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

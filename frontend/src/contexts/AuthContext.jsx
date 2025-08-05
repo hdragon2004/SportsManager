@@ -15,7 +15,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCoach, setIsCoach] = useState(false);
-  const [isModerator, setIsModerator] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,22 +40,13 @@ export const AuthProvider = ({ children }) => {
             setIsAdmin(false);
           }
           
-          // Kiểm tra role huấn luyện viên
-          if (userData.Roles && userData.Roles.some(role => role.name === 'coach' || role.name === 'huấn luyện viên')) {
+          // Kiểm tra role coach
+          if (userData.Roles && userData.Roles.some(role => role.name === 'coach')) {
             console.log('User is coach');
             setIsCoach(true);
           } else {
             console.log('User is not coach');
             setIsCoach(false);
-          }
-
-          // Kiểm tra role moderator
-          if (userData.Roles && userData.Roles.some(role => role.name === 'moderator')) {
-            console.log('User is moderator');
-            setIsModerator(true);
-          } else {
-            console.log('User is not moderator');
-            setIsModerator(false);
           }
           
           // Cập nhật localStorage với thông tin mới
@@ -84,18 +74,11 @@ export const AuthProvider = ({ children }) => {
       setIsAdmin(false);
     }
     
-    // Kiểm tra role huấn luyện viên
-    if (userData.Roles && userData.Roles.some(role => role.name === 'coach' || role.name === 'huấn luyện viên')) {
+    // Kiểm tra role coach
+    if (userData.Roles && userData.Roles.some(role => role.name === 'coach')) {
       setIsCoach(true);
     } else {
       setIsCoach(false);
-    }
-
-    // Kiểm tra role moderator
-    if (userData.Roles && userData.Roles.some(role => role.name === 'moderator')) {
-      setIsModerator(true);
-    } else {
-      setIsModerator(false);
     }
     
     localStorage.setItem('user', JSON.stringify(userData));
@@ -106,7 +89,6 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAdmin(false);
     setIsCoach(false);
-    setIsModerator(false);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
@@ -122,7 +104,6 @@ export const AuthProvider = ({ children }) => {
     user,
     isAdmin,
     isCoach,
-    isModerator,
     loading,
     login,
     logout,

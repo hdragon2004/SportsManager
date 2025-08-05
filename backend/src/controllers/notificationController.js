@@ -10,295 +10,293 @@ import {
   markAsRead,
   markAllAsRead
 } from '../services/notificationService';
-import models from '~/models';
+import tournamentNotificationService from '../services/tournamentNotificationService';
 
-export async function getAllNotifications(req, res) {
+// Lấy tất cả thông báo của user đang đăng nhập
+const getAllNotificationsController = async (req, res) => {
   try {
-    // Kiểm tra nếu user có role admin thì lấy tất cả notifications
-    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
-    
-    if (isAdmin) {
-      const notifications = await getAllNotificationsService();
-      res.status(StatusCodes.OK).json({ success: true, data: notifications });
-    } else {
-      // User thường chỉ có thể xem notifications của chính mình
-      const userNotifications = await getNotificationsByUserId(req.user.userId);
-      res.status(StatusCodes.OK).json({ success: true, data: userNotifications });
+    // Kiểm tra user đã đăng nhập chưa
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Bạn cần đăng nhập để xem thông báo'
+      });
     }
+
+    // Lấy thông báo của user đang đăng nhập
+    const notifications = await getNotificationsByUserId(req.user.userId);
+    res.json({
+      success: true,
+      data: notifications
+    });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error fetching notifications',
+    console.error('Error in getAllNotificationsController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy danh sách thông báo',
       error: error.message
     });
   }
-}
+};
 
-export async function getNotification(req, res) {
+// Lấy thông báo theo ID
+const getNotificationByIdController = async (req, res) => {
   try {
-    const notification = await getNotificationById(req.params.id);
+    const { id } = req.params;
+    const notification = await getNotificationById(id);
     
     if (!notification) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Notification not found' 
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy thông báo'
       });
     }
     
-    res.status(StatusCodes.OK).json({ success: true, data: notification });
+    res.json({
+      success: true,
+      data: notification
+    });
   } catch (error) {
-    console.error('Error fetching notification:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error fetching notification',
+    console.error('Error in getNotificationByIdController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy thông báo',
       error: error.message
     });
   }
-}
+};
 
-export async function getUserNotifications(req, res) {
+// Lấy thông báo theo user ID
+const getNotificationsByUserIdController = async (req, res) => {
   try {
-    // Kiểm tra nếu user có role admin thì có thể xem notifications của bất kỳ user nào
-    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
+    const { userId } = req.params;
+    const notifications = await getNotificationsByUserId(userId);
     
-    if (isAdmin) {
-      const notifications = await getNotificationsByUserId(req.params.userId);
-      res.status(StatusCodes.OK).json({ success: true, data: notifications });
-    } else {
-      // User thường chỉ có thể xem notifications của chính mình
-      if (parseInt(req.params.userId) !== req.user.userId) {
-        return res.status(StatusCodes.FORBIDDEN).json({
-          success: false,
-          message: 'Bạn không có quyền xem notifications của người khác'
-        });
-      }
-      
-      const notifications = await getNotificationsByUserId(req.params.userId);
-      res.status(StatusCodes.OK).json({ success: true, data: notifications });
-    }
+    res.json({
+      success: true,
+      data: notifications
+    });
   } catch (error) {
-    console.error('Error fetching user notifications:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error fetching user notifications',
+    console.error('Error in getNotificationsByUserIdController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy thông báo của user',
       error: error.message
     });
   }
-}
+};
 
-export async function getUnreadCount(req, res) {
+// Lấy số lượng thông báo chưa đọc
+const getUnreadNotificationsCountController = async (req, res) => {
   try {
-    // Lấy thông tin user và roles nếu chưa có
-    if (!req.userRoles) {
-      const userWithRoles = await models.User.findByPk(req.user.userId, {
-        include: [{
-          model: models.Role,
-          through: models.Role_User
-        }]
-      });
-      req.userRoles = userWithRoles?.Roles || [];
-    }
-
-    // Kiểm tra nếu user có role admin thì có thể xem unread count của bất kỳ user nào
-    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
+    const { userId } = req.params;
+    const count = await getUnreadNotificationsCount(userId);
     
-    if (isAdmin) {
-      const count = await getUnreadNotificationsCount(req.params.userId);
-      res.status(StatusCodes.OK).json({ success: true, data: { count } });
-    } else {
-      // User thường chỉ có thể xem unread count của chính mình
-      const targetUserIdInt = parseInt(req.params.userId);
-      if (isNaN(targetUserIdInt) || targetUserIdInt !== req.user.userId) {
-        return res.status(StatusCodes.FORBIDDEN).json({
-          success: false,
-          message: 'Bạn không có quyền xem unread count của người khác'
-        });
-      }
-      
-      const count = await getUnreadNotificationsCount(req.params.userId);
-      res.status(StatusCodes.OK).json({ success: true, data: { count } });
-    }
+    res.json({
+      success: true,
+      data: { count }
+    });
   } catch (error) {
-    console.error('Error fetching unread notifications count:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error fetching unread notifications count',
+    console.error('Error in getUnreadNotificationsCountController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy số lượng thông báo chưa đọc',
       error: error.message
     });
   }
-}
+};
 
-export async function createNotification(req, res) {
+// Tạo thông báo mới
+const createNotificationController = async (req, res) => {
   try {
-    // Check if request body exists
-    if (!req.body) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Request body is missing'
-      });
-    }
+    const notificationData = req.body;
+    const notification = await createNotificationService(notificationData);
     
-    // Check for required fields
-    if (!req.body.title) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Notification title is required'
-      });
-    }
-    
-    if (!req.body.message) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Notification message is required'
-      });
-    }
-    
-    if (!req.body.User_ID) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'User_ID is required'
-      });
-    }
-    
-    const notification = await createNotificationService(req.body);
-    res.status(StatusCodes.CREATED).json({ success: true, data: notification });
+    res.status(201).json({
+      success: true,
+      data: notification
+    });
   } catch (error) {
-    console.error('Error creating notification:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error creating notification',
+    console.error('Error in createNotificationController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi tạo thông báo',
       error: error.message
     });
   }
-}
+};
 
-export async function updateNotification(req, res) {
+// Cập nhật thông báo
+const updateNotificationController = async (req, res) => {
   try {
-    // Check if request body exists
-    if (!req.body) {
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        message: 'Request body is missing'
-      });
-    }
+    const { id } = req.params;
+    const updateData = req.body;
     
-    const updatedNotification = await updateNotificationService(req.params.id, req.body);
+    const notification = await updateNotificationService(id, updateData);
     
-    if (!updatedNotification) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Notification not found' 
-      });
-    }
-    
-    res.status(StatusCodes.OK).json({ success: true, data: updatedNotification });
+    res.json({
+      success: true,
+      data: notification
+    });
   } catch (error) {
-    console.error('Error updating notification:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error updating notification',
+    console.error('Error in updateNotificationController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi cập nhật thông báo',
       error: error.message
     });
   }
-}
+};
 
-export async function deleteNotification(req, res) {
+// Xóa thông báo
+const deleteNotificationController = async (req, res) => {
   try {
-    // Kiểm tra quyền truy cập - middleware đã kiểm tra nhưng đảm bảo thêm một lần nữa
-    const notification = await getNotificationById(req.params.id);
+    const { id } = req.params;
+    await deleteNotificationService(id);
     
-    if (!notification) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Notification not found' 
-      });
-    }
-
-    // Kiểm tra nếu user có role admin thì cho phép
-    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
-    if (!isAdmin && notification.User_ID !== req.user.userId) {
-      return res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        message: 'Bạn không có quyền xóa thông báo này'
-      });
-    }
-    
-    const deleted = await deleteNotificationService(req.params.id);
-    
-    res.status(StatusCodes.OK).json({ 
-      success: true, 
-      message: 'Notification deleted successfully' 
+    res.json({
+      success: true,
+      message: 'Đã xóa thông báo thành công'
     });
   } catch (error) {
-    console.error('Error deleting notification:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error deleting notification',
+    console.error('Error in deleteNotificationController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi xóa thông báo',
       error: error.message
     });
   }
-}
+};
 
-export async function markNotificationAsRead(req, res) {
+// Đánh dấu thông báo đã đọc
+const markAsReadController = async (req, res) => {
   try {
-    // Kiểm tra quyền truy cập - middleware đã kiểm tra nhưng đảm bảo thêm một lần nữa
-    const notification = await getNotificationById(req.params.id);
+    const { id } = req.params;
+    const notification = await markAsRead(id);
     
-    if (!notification) {
-      return res.status(StatusCodes.NOT_FOUND).json({ 
-        success: false, 
-        message: 'Notification not found' 
-      });
-    }
-
-    // Kiểm tra nếu user có role admin thì cho phép
-    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
-    if (!isAdmin && notification.User_ID !== req.user.userId) {
-      return res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        message: 'Bạn không có quyền truy cập thông báo này'
-      });
-    }
-    
-    const updatedNotification = await markAsRead(req.params.id);
-    
-    res.status(StatusCodes.OK).json({ success: true, data: updatedNotification });
+    res.json({
+      success: true,
+      data: notification
+    });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error marking notification as read',
+    console.error('Error in markAsReadController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi đánh dấu thông báo đã đọc',
       error: error.message
     });
   }
-}
+};
 
-export async function markAllNotificationsAsRead(req, res) {
+// Đánh dấu tất cả thông báo đã đọc
+const markAllAsReadController = async (req, res) => {
   try {
-    // Nếu có userId trong params thì sử dụng, không thì sử dụng user hiện tại
-    const userId = req.params.userId || req.user.userId;
-    
-    // Kiểm tra nếu user có role admin thì cho phép
-    const isAdmin = req.userRoles?.some(role => role.name === 'admin');
-    if (!isAdmin && parseInt(userId) !== req.user.userId) {
-      return res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        message: 'Bạn không có quyền đánh dấu thông báo của người khác'
-      });
-    }
-    
+    const { userId } = req.params;
     await markAllAsRead(userId);
-    res.status(StatusCodes.OK).json({ 
-      success: true, 
-      message: 'All notifications marked as read' 
+    
+    res.json({
+      success: true,
+      message: 'Đã đánh dấu tất cả thông báo đã đọc'
     });
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
-      success: false, 
-      message: 'Error marking all notifications as read',
+    console.error('Error in markAllAsReadController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi đánh dấu tất cả thông báo đã đọc',
       error: error.message
     });
   }
-} 
+};
+
+// Gửi thông báo tự động cho các giải đấu hôm nay
+const sendTodayTournamentsNotificationController = async (req, res) => {
+  try {
+    const result = await tournamentNotificationService.sendTodayTournamentsNotification();
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error in sendTodayTournamentsNotificationController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi gửi thông báo tự động',
+      error: error.message
+    });
+  }
+};
+
+// Gửi thông báo nhắc nhở trận đấu
+const sendMatchReminderNotificationController = async (req, res) => {
+  try {
+    const { minutesBefore = 30 } = req.body;
+    const result = await tournamentNotificationService.sendMatchReminderNotification(minutesBefore);
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error in sendMatchReminderNotificationController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi gửi thông báo nhắc nhở',
+      error: error.message
+    });
+  }
+};
+
+// Khởi động lịch trình gửi thông báo tự động
+const startNotificationScheduleController = async (req, res) => {
+  try {
+    tournamentNotificationService.scheduleNotifications();
+    
+    res.json({
+      success: true,
+      message: 'Đã khởi động lịch trình gửi thông báo tự động'
+    });
+  } catch (error) {
+    console.error('Error in startNotificationScheduleController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi khởi động lịch trình thông báo',
+      error: error.message
+    });
+  }
+};
+
+// Lấy thông tin các trận đấu hôm nay
+const getTodayMatchesController = async (req, res) => {
+  try {
+    const matches = await tournamentNotificationService.getTodayMatches();
+    
+    res.json({
+      success: true,
+      data: matches
+    });
+  } catch (error) {
+    console.error('Error in getTodayMatchesController:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Lỗi khi lấy thông tin trận đấu hôm nay',
+      error: error.message
+    });
+  }
+};
+
+export {
+  getAllNotificationsController,
+  getNotificationByIdController,
+  getNotificationsByUserIdController,
+  getUnreadNotificationsCountController,
+  createNotificationController,
+  updateNotificationController,
+  deleteNotificationController,
+  markAsReadController,
+  markAllAsReadController,
+  sendTodayTournamentsNotificationController,
+  sendMatchReminderNotificationController,
+  startNotificationScheduleController,
+  getTodayMatchesController
+}; 

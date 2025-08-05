@@ -26,6 +26,9 @@ export function AppRoutes(app) {
     authRouter.post('/change-password', authMiddleware, authController.changePassword);
     // Endpoint để lấy thông tin user hiện tại
     authRouter.get('/me', authMiddleware, authController.getCurrentUser);
+    
+    // Test endpoint để kiểm tra token
+    authRouter.get('/test-token', authMiddleware, authController.testToken);
 
     app.use('/api/auth', authRouter);
 
@@ -55,7 +58,11 @@ export function AppRoutes(app) {
     router.delete('/role-users/:id', authMiddleware, checkDataAccess('user'), roleUserController.deleteRoleUser);
     
     // Route để user xin quyền huấn luyện viên
-    router.post('/request-coach-role', authMiddleware, roleUserController.requestCoachRole);
+    router.post('/request-coach-role', authMiddleware, filterDataByUser('user'), roleUserController.requestCoachRole);
+    
+    // Routes để admin xử lý yêu cầu xin quyền huấn luyện viên
+    router.get('/coach-role-requests', authMiddleware, checkDataAccess('user'), roleUserController.getCoachRoleRequests);
+    router.put('/coach-role-requests/:id/process', authMiddleware, checkDataAccess('user'), roleUserController.processCoachRoleRequest);
 
 
 
@@ -85,9 +92,16 @@ export function AppRoutes(app) {
     router.put('/tournament-types/:id', authMiddleware, checkDataAccess('user'), tournamentTypeController.updateTournamentType);
     router.delete('/tournament-types/:id', authMiddleware, checkDataAccess('user'), tournamentTypeController.deleteTournamentType);
 
-    // Tournament routes
+    // Public Tournament routes (Không cần đăng nhập để xem)
+    router.get('/public/tournaments', tournamentController.getAllPublicTournaments);
+    router.get('/public/tournaments/:id', tournamentController.getPublicTournament);
+    router.get('/public/tournaments/:id/registration-status', tournamentController.getPublicTournamentRegistrationStatus);
+    router.get('/public/tournaments/:tournamentId/matches', matchController.getPublicMatchesByTournament);
+
+    // Tournament routes (Cần đăng nhập để thao tác)
     router.get('/tournaments', authMiddleware, filterDataByUser('tournament'), tournamentController.getAllTournaments);
     router.get('/tournaments/:id', authMiddleware, checkDataAccess('tournament'), tournamentController.getTournament);
+    router.get('/tournaments/:id/registration-status', authMiddleware, checkDataAccess('tournament'), tournamentController.getTournamentRegistrationStatus);
     router.post('/tournaments', authMiddleware, tournamentValidation.createTournament, tournamentController.createTournament);
     router.put('/tournaments/:id', authMiddleware, checkDataAccess('tournament'), tournamentValidation.updateTournament, tournamentController.updateTournament);
     router.delete('/tournaments/:id', authMiddleware, checkDataAccess('tournament'), tournamentController.deleteTournament);
@@ -100,6 +114,7 @@ export function AppRoutes(app) {
     router.delete('/registrations/:id', authMiddleware, checkDataAccess('registration'), registrationController.deleteRegistration);
     router.get('/tournaments/:tournamentId/registrations', authMiddleware, checkDataAccess('registration'), registrationController.getRegistrationsByTournament);
     router.get('/teams/:teamId/registrations', authMiddleware, checkDataAccess('registration'), registrationController.getRegistrationsByTeam);
+    router.get('/tournaments/:tournamentId/teams/:teamId/registration', authMiddleware, checkDataAccess('registration'), registrationController.checkTeamRegistration);
 
     // Match routes
     router.get('/matches', authMiddleware, filterDataByUser('match'), matchController.getAllMatches);
@@ -110,16 +125,22 @@ export function AppRoutes(app) {
     router.get('/tournaments/:tournamentId/matches', authMiddleware, checkDataAccess('match'), matchController.getMatchesByTournament);
 
     // Notification routes
-    router.get('/notifications', authMiddleware, filterDataByUser('notification'), notificationController.getAllNotifications);
-    router.get('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.getNotification);
-    router.post('/notifications', authMiddleware, notificationController.createNotification);
-    router.put('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.updateNotification);
-    router.delete('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.deleteNotification);
-    router.get('/users/:userId/notifications', authMiddleware, checkDataAccess('notification'), notificationController.getUserNotifications);
-    router.get('/users/:userId/notifications/unread-count', authMiddleware, checkDataAccess('notification'), notificationController.getUnreadCount);
-    router.put('/notifications/:id/read', authMiddleware, checkDataAccess('notification'), notificationController.markNotificationAsRead);
-    router.put('/notifications/read-all', authMiddleware, filterDataByUser('notification'), notificationController.markAllNotificationsAsRead);
-    router.put('/users/:userId/notifications/read-all', authMiddleware, checkDataAccess('notification'), notificationController.markAllNotificationsAsRead);
+    router.get('/notifications', authMiddleware, filterDataByUser('notification'), notificationController.getAllNotificationsController);
+    router.get('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.getNotificationByIdController);
+    router.post('/notifications', authMiddleware, notificationController.createNotificationController);
+    router.put('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.updateNotificationController);
+    router.delete('/notifications/:id', authMiddleware, checkDataAccess('notification'), notificationController.deleteNotificationController);
+    router.get('/users/:userId/notifications', authMiddleware, checkDataAccess('notification'), notificationController.getNotificationsByUserIdController);
+    router.get('/users/:userId/notifications/unread-count', authMiddleware, checkDataAccess('notification'), notificationController.getUnreadNotificationsCountController);
+    router.put('/notifications/:id/read', authMiddleware, checkDataAccess('notification'), notificationController.markAsReadController);
+    router.put('/notifications/read-all', authMiddleware, filterDataByUser('notification'), notificationController.markAllAsReadController);
+    router.put('/users/:userId/notifications/read-all', authMiddleware, checkDataAccess('notification'), notificationController.markAllAsReadController);
+    
+    // Auto notification routes (Chỉ admin)
+    router.post('/notifications/send-today-tournaments', authMiddleware, checkDataAccess('notification'), notificationController.sendTodayTournamentsNotificationController);
+    router.post('/notifications/send-match-reminder', authMiddleware, checkDataAccess('notification'), notificationController.sendMatchReminderNotificationController);
+    router.post('/notifications/start-schedule', authMiddleware, checkDataAccess('notification'), notificationController.startNotificationScheduleController);
+    router.get('/notifications/today-matches', authMiddleware, checkDataAccess('notification'), notificationController.getTodayMatchesController);
 
     // Sử dụng router chính với tiền tố /api
     app.use('/api', router);

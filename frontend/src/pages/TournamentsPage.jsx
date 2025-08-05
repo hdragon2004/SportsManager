@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import Modal from '../components/Modal';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { getAllPublicTournaments } from '../features/tournaments/tournamentAPI';
 import axiosClient from '../services/axiosClient';
 
 const TournamentsPage = () => {
@@ -31,10 +32,7 @@ const TournamentsPage = () => {
     const fetchTournaments = async () => {
       setLoading(true);
       try {
-        const statusFilter = searchParams.get('status');
-        const response = await axiosClient.get('/tournaments', {
-          params: statusFilter ? { status: statusFilter } : {}
-        });
+        const response = await getAllPublicTournaments();
         const tournamentsData = response.data?.data || [];
         setTournaments(tournamentsData);
       } catch (error) {

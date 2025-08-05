@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getUnreadCount } from '../features/notifications/notificationAPI';
+import { useSocket } from '../contexts/SocketContext';
+import SocketStatus from './SocketStatus';
 
 const Header = ({ className = '' }) => {
   const { user, isAdmin, logout } = useAuth();
+  const { unreadCount, isConnected } = useSocket();
   const navigate = useNavigate();
   const location = useLocation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const handleLogout = () => {
     logout();
@@ -30,29 +31,7 @@ const Header = ({ className = '' }) => {
     navigate('/notifications');
   };
 
-  // Lấy số thông báo chưa đọc
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      if (user && user.id) {
-        try {
-          const response = await getUnreadCount(user.id);
-          if (response.data.success) {
-            setUnreadCount(response.data.data.count || 0);
-          }
-        } catch (error) {
-          console.error('Error fetching unread count:', error);
-          setUnreadCount(0);
-        }
-      }
-    };
-
-    fetchUnreadCount();
-    
-    // Cập nhật mỗi 30 giây
-    const interval = setInterval(fetchUnreadCount, 30000);
-    
-    return () => clearInterval(interval);
-  }, [user]);
+  // Socket connection status is handled by SocketContext
 
   // Hàm kiểm tra trang hiện tại để xác định button nào đang active
   const isActivePage = (path) => {
@@ -106,16 +85,6 @@ const Header = ({ className = '' }) => {
                 Giải đấu
               </Link>
               <Link 
-                to="/teams" 
-                className={`text-white uppercase tracking-wide pb-1 transition-colors ${
-                  isActivePage('/teams') 
-                    ? 'border-b-2 border-[#30ddff]' 
-                    : 'hover:text-[#30ddff]'
-                }`}
-              >
-                Đội thi đấu
-              </Link>
-              <Link 
                 to="/schedule" 
                 className={`text-white uppercase tracking-wide pb-1 transition-colors ${
                   isActivePage('/schedule') 
@@ -139,6 +108,9 @@ const Header = ({ className = '' }) => {
 
             {/* User Section */}
             <div className="flex items-center space-x-4">
+              {/* Socket Status */}
+              {user && <SocketStatus />}
+              
               {user ? (
                 <div className="flex items-center space-x-4">
                   <div className="relative">

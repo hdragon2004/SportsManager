@@ -195,7 +195,7 @@ const DashboardPage = () => {
         </button>
 
         <button 
-          onClick={() => navigate('/admin/permissions')}
+          onClick={() => navigate('/admin/coach-permissions')}
           className="bg-gradient-to-r from-[#30ddff] to-[#00b8d4] text-white p-6 rounded-2xl hover:from-[#00b8d4] hover:to-[#30ddff] transition-all duration-300 shadow-lg"
         >
           <div className="flex items-center">

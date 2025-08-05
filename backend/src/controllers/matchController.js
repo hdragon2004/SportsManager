@@ -110,6 +110,19 @@ export async function getMatchesByTournament(req, res) {
   }
 }
 
+export async function getPublicMatchesByTournament(req, res) {
+  try {
+    const matches = await getMatchesByTournamentId(req.params.tournamentId);
+    res.status(StatusCodes.OK).json({ success: true, data: matches });
+  } catch (error) {
+    console.error('Error fetching public matches by tournament:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ 
+      success: false, 
+      message: 'Error fetching matches',
+      error: error.message
+    });
+  }
+}
 
 
 export async function createMatch(req, res) {

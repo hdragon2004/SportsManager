@@ -8,6 +8,7 @@ import { errorHandlingMiddleware } from './middlewares/errorHandlingMiddleware.j
 import { requestLogger, errorLogger } from './middlewares/loggingMiddleware.js';
 import { apiLimiter } from './middlewares/rateLimitMiddleware.js';
 import { socketManager } from './socket/socketManager.js';
+import tournamentNotificationService from './services/tournamentNotificationService.js';
 
 // Load environment variables
 dotenv.config();
@@ -118,4 +119,12 @@ server.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}`);
+  
+  // Khởi động lịch trình gửi thông báo tự động
+  try {
+    tournamentNotificationService.scheduleNotifications();
+    console.log('✅ Đã khởi động lịch trình gửi thông báo tự động');
+  } catch (error) {
+    console.error('❌ Lỗi khi khởi động lịch trình thông báo:', error);
+  }
 });

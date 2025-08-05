@@ -256,3 +256,28 @@ export async function getCurrentUser(req, res) {
     });
   }
 }
+
+/**
+ * HÀM KIỂM TRA TOKEN (TEST)
+ */
+export async function testToken(req, res) {
+  try {
+    console.log('Request user:', req.user);
+    console.log('Request headers:', req.headers);
+    
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Token is valid',
+      user: req.user,
+      userId: req.user?.userId,
+      email: req.user?.email
+    });
+  } catch (error) {
+    console.error('Error testing token:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: 'Error testing token',
+      error: error.message
+    });
+  }
+}

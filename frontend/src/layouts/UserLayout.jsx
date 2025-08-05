@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import RealtimeNotification from '../components/RealtimeNotification';
 
 const UserLayout = ({ children }) => {
-  const { user, isAdmin, isCoach, isModerator, logout } = useAuth();
+  const { user, isAdmin, isCoach, logout } = useAuth();
   const location = useLocation();
 
   const handleLogout = () => {
@@ -19,7 +20,7 @@ const UserLayout = ({ children }) => {
     },
   ];
 
-  // Menu đặc biệt cho admin, moderator hoặc coach
+      // Menu đặc biệt cho admin hoặc coach
   const specialNavigation = [   
     { 
         name: 'Thành viên', 
@@ -46,11 +47,12 @@ const UserLayout = ({ children }) => {
   // Kết hợp menu dựa trên role
   const navigation = [
     ...basicNavigation,
-    ...(isAdmin || isModerator || isCoach ? specialNavigation : [])
+    ...(isAdmin || isCoach ? specialNavigation : [])
   ];
 
   return (
     <div className="min-h-screen bg-gray-900">
+      <RealtimeNotification />
       <div className="flex">
         {/* Sidebar */}
         <div className="fixed w-64 bg-gray-800/90 backdrop-blur-xl border-r border-gray-700 min-h-screen z-50">

@@ -136,7 +136,7 @@ const PermissionPage = () => {
       case 2:
         return 'User';
       case 3:
-        return 'Moderator';
+        return 'Coach';
       case 4:
         return 'Huấn luyện viên';
       default:
